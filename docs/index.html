@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhotoScan Design and Capture Guide</title>
+<meta name="description" content="How PhotoScan turns product photos into a Blender-ready 3D model with Apple Object Capture, and how to shoot the photos for an accurate scan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<style>
+/* Layout: a technical manual. Sticky contents rail on wide screens, one reading column, diagrams drawn inline. */
+:root {
+  --paper: #F6F5F2;
+  --surface: #FFFFFF;
+  --ink: #1A1C1F;
+  --ink-2: #474B52;
+  --rule: #D9D6CF;
+  --accent: #A8430A;        /* darkroom safelight amber, darkened for text contrast */
+  --accent-soft: #F7E6D9;
+  --info: #1F5C99;
+  --info-soft: #E3ECF6;
+  --warn-soft: #FBEBD6;
+  --ok: #1E7A46;
+  --code-bg: #EEECE7;
+  --font-display: 'IBM Plex Sans Condensed', 'Arial Narrow', 'Helvetica Neue', sans-serif;
+  --font-body: 'IBM Plex Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #15171A; --surface: #1D2024; --ink: #ECEAE5; --ink-2: #AFB2B8; --rule: #33373D;
+    --accent: #F2994A; --accent-soft: #3A2A1C; --info: #7DB3EA; --info-soft: #1C2A38; --warn-soft: #3A2E1F;
+    --ok: #5CC88A; --code-bg: #24282D; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #15171A; --surface: #1D2024; --ink: #ECEAE5; --ink-2: #AFB2B8; --rule: #33373D;
+  --accent: #F2994A; --accent-soft: #3A2A1C; --info: #7DB3EA; --info-soft: #1C2A38; --warn-soft: #3A2E1F;
+  --ok: #5CC88A; --code-bg: #24282D; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: 17px; line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--info); text-underline-offset: 2px; }
+a:hover { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+.shell {
+  max-width: 1180px; margin: 0 auto;
+  padding-block: 40px 96px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 56px;
+}
+@media (max-width: 900px) { .shell { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 24px 64px; } }
+
+/* contents rail */
+nav.toc { position: sticky; top: 24px; align-self: start; font-size: 14px; line-height: 1.4; }
+nav.toc .label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { display: block; padding: 5px 10px; color: var(--ink-2); text-decoration: none; border-radius: 6px; }
+nav.toc a:hover { background: var(--surface); color: var(--ink); }
+nav.toc .group { margin-top: 14px; font-weight: 600; color: var(--ink); padding: 0 10px; }
+@media (max-width: 900px) {
+  nav.toc { position: static; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; }
+  nav.toc ol { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+
+main { min-width: 0; max-width: 760px; }
+
+header.masthead { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 40px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(40px, 7vw, 64px); line-height: 1; letter-spacing: -.5px; margin: 10px 0 16px; text-wrap: balance; }
+.lede { font-size: 20px; line-height: 1.55; color: var(--ink-2); margin: 0; max-width: 640px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 18px; font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); }
+
+.part { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 72px 0 4px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.15; margin: 0 0 16px; text-wrap: balance; scroll-margin-top: 24px; }
+h3 { font-size: 20px; line-height: 1.3; margin: 40px 0 10px; font-weight: 600; text-wrap: balance; scroll-margin-top: 24px; }
+h4 { font-size: 15px; margin: 24px 0 6px; font-weight: 600; letter-spacing: .02em; }
+p { margin: 0 0 16px; }
+ul, ol { margin: 0 0 16px; padding-left: 22px; }
+li { margin: 4px 0; }
+section > h2 .num { font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--ink-2); margin-right: 10px; vertical-align: 4px; }
+
+code, kbd { font-family: var(--font-mono); font-size: .88em; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { font-family: var(--font-mono); font-size: 13.5px; line-height: 1.6; background: var(--code-bg); border-radius: 8px; padding: 16px 18px; overflow-x: auto; margin: 0 0 20px; }
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.table-wrap { overflow-x: auto; margin: 0 0 24px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; line-height: 1.45; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 12px; font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; background: var(--paper); }
+td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.note { border-radius: 10px; padding: 14px 18px; margin: 0 0 24px; font-size: 15.5px; line-height: 1.55; }
+.note b:first-child { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 4px; }
+.note.info { background: var(--info-soft); }
+.note.info b:first-child { color: var(--info); }
+.note.warn { background: var(--warn-soft); }
+.note.warn b:first-child { color: var(--accent); }
+.note p:last-child { margin-bottom: 0; }
+
+figure { margin: 8px 0 28px; }
+figure .frame { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 18px; overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; min-width: 560px; }
+figure.compact svg { min-width: 300px; }
+figcaption { font-size: 14px; color: var(--ink-2); margin-top: 8px; }
+
+/* diagram tokens */
+.d-box { fill: var(--surface); stroke: var(--rule); stroke-width: 1.5; }
+.d-box-key { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.d-box-info { fill: var(--info-soft); stroke: var(--info); stroke-width: 1.5; }
+.d-line { stroke: var(--ink-2); stroke-width: 1.6; fill: none; }
+.d-dash { stroke: var(--ink-2); stroke-width: 1.2; fill: none; stroke-dasharray: 4 4; }
+.d-accent { stroke: var(--accent); stroke-width: 2; fill: none; }
+.d-fill-accent { fill: var(--accent); }
+.d-fill-ink { fill: var(--ink-2); }
+.d-ground { fill: var(--code-bg); }
+.d-t { fill: var(--ink); font-family: var(--font-body); font-size: 13px; }
+.d-tb { fill: var(--ink); font-family: var(--font-body); font-size: 14px; font-weight: 600; }
+.d-ts { fill: var(--ink-2); font-family: var(--font-body); font-size: 12px; }
+.d-tm { fill: var(--ink-2); font-family: var(--font-mono); font-size: 11.5px; }
+.d-ta { fill: var(--accent); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+
+/* step list for the shoot */
+ol.steps { list-style: none; padding: 0; counter-reset: s; display: grid; gap: 14px; margin: 0 0 28px; }
+ol.steps > li { counter-increment: s; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px 16px 60px; position: relative; margin: 0; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 16px; top: 15px; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--paper); font-family: var(--font-mono); font-size: 14px; display: grid; place-items: center; }
+ol.steps > li b.t { display: block; font-size: 17px; margin-bottom: 4px; }
+ol.steps > li p:last-child, ol.steps > li ul:last-child { margin-bottom: 0; }
+
+.checklist { list-style: none; padding: 0; columns: 2 280px; column-gap: 32px; margin: 0 0 24px; }
+.checklist li { break-inside: avoid; padding-left: 28px; position: relative; margin: 0 0 8px; }
+.checklist li::before { content: ""; position: absolute; left: 0; top: 5px; width: 15px; height: 15px; border: 1.5px solid var(--ink-2); border-radius: 3px; }
+
+.spec { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 0 0 24px; }
+.spec div { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; }
+.spec .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.spec .v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.theme-toggle { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: max(16px, env(safe-area-inset-bottom, 0px)); background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 999px; padding: 8px 14px; font: 500 13px var(--font-body); cursor: pointer; }
+
+footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="toc" aria-label="Contents">
+  <div class="label">Contents</div>
+  <ol>
+    <li><a href="#overview">Overview</a></li>
+    <li class="group">Part 1 · Design</li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#pipeline">Processing pipeline</a></li>
+    <li><a href="#options">Options</a></li>
+    <li><a href="#output">Output files</a></li>
+    <li><a href="#scale">Scale and placement</a></li>
+    <li><a href="#interface">Interface</a></li>
+    <li><a href="#build">Build and install</a></li>
+    <li><a href="#limits">Limits and risks</a></li>
+    <li class="group">Part 2 · Capture</li>
+    <li><a href="#how-many">How many photos</a></li>
+    <li><a href="#video">Using a video</a></li>
+    <li><a href="#kit">Equipment</a></li>
+    <li><a href="#studio">Studio setup</a></li>
+    <li><a href="#lighting">Lighting</a></li>
+    <li><a href="#camera">Camera settings</a></li>
+    <li><a href="#shoot">The shoot, step by step</a></li>
+    <li><a href="#materials">Difficult materials</a></li>
+    <li><a href="#process">Processing in PhotoScan</a></li>
+    <li><a href="#verify">Checking accuracy</a></li>
+    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#checklist">Shoot-day checklist</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="masthead">
+  <div class="eyebrow">PhotoScan · Design and capture guide</div>
+  <h1>From product photos to a Blender-ready 3D model</h1>
+  <p class="lede">PhotoScan is a small, free Mac app that runs Apple’s Object Capture photogrammetry on a folder of photos and saves a textured USDZ plus an OBJ in real millimetres. This guide explains how it is built and how to shoot photos that give an accurate model.</p>
+  <div class="meta"><span>Version 1.0</span><span>macOS 13+ · Apple Silicon</span><span>Swift · RealityKit · ModelIO</span></div>
+</header>
+
+<section id="overview">
+  <h2>Overview</h2>
+  <p>Photogrammetry rebuilds an object’s shape from many overlapping photos. The software finds the same surface points in different photos, works out where each photo was taken from, and then measures depth from those viewpoints. Apple ships a high-quality photogrammetry engine in macOS, called Object Capture, as part of RealityKit. PhotoScan is a thin, focused front end for it, tuned for product photography and for handing the result to Blender.</p>
+  <div class="spec">
+    <div><div class="k">Input</div><div class="v">JPEG · HEIC · PNG</div></div>
+    <div><div class="k">Output</div><div class="v">USDZ + OBJ</div></div>
+    <div><div class="k">Units</div><div class="v">mm, Y up</div></div>
+    <div><div class="k">Typical shoot</div><div class="v">60–80 photos</div></div>
+    <div><div class="k">Runs</div><div class="v">On your Mac</div></div>
+    <div><div class="k">Cost</div><div class="v">Free</div></div>
+  </div>
+  <p>Nothing is uploaded. The heavy lifting is done by Apple’s engine on your Mac’s GPU; PhotoScan adds the settings that matter for product work, real-world scaling, and a clean OBJ export.</p>
+</section>
+
+<div class="part">Part 1</div>
+<section id="architecture">
+  <h2><span class="num">1.1</span>Architecture</h2>
+  <p>The project is a Swift package with one shared core and two front ends. The core does all the work; the app and the command-line tool only collect settings and show progress.</p>
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 300" role="img" aria-label="Architecture: the PhotoScan app and the photoscan-cli tool both use PhotoScanCore, which contains ScanRunner and OBJExporter. ScanRunner calls RealityKit's PhotogrammetrySession and writes a USDZ; OBJExporter reads the USDZ with ModelIO and writes OBJ, MTL and PNG.">
+        <rect class="d-box" x="20" y="30" width="190" height="70" rx="10"/>
+        <text class="d-tb" x="38" y="60">PhotoScan.app</text>
+        <text class="d-ts" x="38" y="80">SwiftUI window</text>
+        <rect class="d-box" x="20" y="130" width="190" height="70" rx="10"/>
+        <text class="d-tb" x="38" y="160">photoscan-cli</text>
+        <text class="d-ts" x="38" y="180">batch / Terminal</text>
+
+        <rect class="d-box-key" x="260" y="20" width="200" height="260" rx="12"/>
+        <text class="d-ta" x="278" y="44">PhotoScanCore</text>
+        <rect class="d-box" x="278" y="60" width="164" height="80" rx="8"/>
+        <text class="d-tb" x="292" y="86">ScanRunner</text>
+        <text class="d-ts" x="292" y="106">settings → session</text>
+        <text class="d-ts" x="292" y="124">progress events</text>
+        <rect class="d-box" x="278" y="170" width="164" height="90" rx="8"/>
+        <text class="d-tb" x="292" y="196">OBJExporter</text>
+        <text class="d-ts" x="292" y="216">mm · Y up · base at 0</text>
+        <text class="d-ts" x="292" y="234">scale · texture</text>
+
+        <rect class="d-box-info" x="510" y="60" width="190" height="80" rx="10"/>
+        <text class="d-tb" x="526" y="86">RealityKit</text>
+        <text class="d-ts" x="526" y="106">PhotogrammetrySession</text>
+        <text class="d-ts" x="526" y="124">(Apple Object Capture)</text>
+        <rect class="d-box-info" x="510" y="170" width="190" height="90" rx="10"/>
+        <text class="d-tb" x="526" y="196">ModelIO</text>
+        <text class="d-ts" x="526" y="216">reads the USDZ</text>
+        <text class="d-ts" x="526" y="234">mesh, UVs, material</text>
+
+        <path class="d-line" d="M210 65 H252" marker-end="url(#ah)"/>
+        <path class="d-line" d="M210 165 H236 V70 H252" marker-end="url(#ah)"/>
+        <path class="d-line" d="M442 100 H502" marker-end="url(#ah)"/>
+        <path class="d-line" d="M442 215 H502" marker-end="url(#ah)"/>
+        <path class="d-dash" d="M360 140 V162" marker-end="url(#ah)"/>
+        <text class="d-tm" x="368" y="156">.usdz</text>
+        <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L8 4 L0 8 Z" class="d-fill-ink"/></marker></defs>
+      </svg>
+    </div>
+    <figcaption>Both front ends call the same two functions, so the app and the command line always give identical results.</figcaption>
+  </figure>
+  <div class="table-wrap"><table>
+    <thead><tr><th>File</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td><code>Sources/PhotoScanCore/ScanRunner.swift</code></td><td>Counts photos, builds the Object Capture configuration, runs the session, turns its output stream into simple events (stage, progress, message), and supports cancel.</td></tr>
+      <tr><td><code>Sources/PhotoScanCore/OBJExporter.swift</code></td><td>Opens the USDZ with ModelIO, gathers every mesh in world space, rescales and re-centres it, extracts the colour texture when possible, and streams the OBJ to disk.</td></tr>
+      <tr><td><code>Sources/PhotoScan/PhotoScanApp.swift</code></td><td>The SwiftUI window, its state model, folder pickers, progress bar with time estimate, and result actions.</td></tr>
+      <tr><td><code>Sources/PhotoScanCLI/main.swift</code></td><td>Argument parsing and console progress for scripted batches.</td></tr>
+      <tr><td><code>build-app.sh</code>, <code>Resources/Info.plist</code></td><td>Compiles with <code>swiftc</code> and assembles <code>PhotoScan.app</code>.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="pipeline">
+  <h2><span class="num">1.2</span>Processing pipeline</h2>
+  <p>A scan passes through two stages. Object Capture produces the model; PhotoScan then reshapes it for Blender.</p>
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 250" role="img" aria-label="Pipeline: photo folder, then Object Capture stages (read and mask photos, match features and solve camera positions, dense depth and mesh, texture bake) producing a USDZ, then the OBJ exporter (world space, scale to millimetres, centre and set base to zero, write OBJ, MTL and PNG).">
+        <defs><marker id="ah2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L8 4 L0 8 Z" class="d-fill-ink"/></marker></defs>
+        <text class="d-ta" x="20" y="22">OBJECT CAPTURE (APPLE)</text>
+        <rect class="d-box" x="20" y="36" width="120" height="74" rx="8"/><text class="d-tb" x="32" y="62">Photos</text><text class="d-ts" x="32" y="82">one folder</text><text class="d-ts" x="32" y="98">JPEG/HEIC/PNG</text>
+        <rect class="d-box-info" x="164" y="36" width="120" height="74" rx="8"/><text class="d-tb" x="176" y="62">Read + mask</text><text class="d-ts" x="176" y="82">remove</text><text class="d-ts" x="176" y="98">background</text>
+        <rect class="d-box-info" x="308" y="36" width="120" height="74" rx="8"/><text class="d-tb" x="320" y="62">Align</text><text class="d-ts" x="320" y="82">match features,</text><text class="d-ts" x="320" y="98">solve cameras</text>
+        <rect class="d-box-info" x="452" y="36" width="120" height="74" rx="8"/><text class="d-tb" x="464" y="62">Reconstruct</text><text class="d-ts" x="464" y="82">dense depth,</text><text class="d-ts" x="464" y="98">mesh</text>
+        <rect class="d-box-info" x="596" y="36" width="104" height="74" rx="8"/><text class="d-tb" x="608" y="62">Texture</text><text class="d-ts" x="608" y="82">bake maps</text><text class="d-tm" x="608" y="98">→ .usdz</text>
+        <path class="d-line" d="M140 73 H158" marker-end="url(#ah2)"/><path class="d-line" d="M284 73 H302" marker-end="url(#ah2)"/><path class="d-line" d="M428 73 H446" marker-end="url(#ah2)"/><path class="d-line" d="M572 73 H590" marker-end="url(#ah2)"/>
+        <path class="d-line" d="M648 110 V132 H80 V160" marker-end="url(#ah2)"/>
+        <text class="d-ta" x="20" y="152">PHOTOSCAN OBJ EXPORTER</text>
+        <rect class="d-box-key" x="20" y="166" width="150" height="70" rx="8"/><text class="d-tb" x="32" y="192">World space</text><text class="d-ts" x="32" y="212">apply node transforms</text>
+        <rect class="d-box-key" x="196" y="166" width="150" height="70" rx="8"/><text class="d-tb" x="208" y="192">Scale</text><text class="d-ts" x="208" y="212">m → mm, or real height</text>
+        <rect class="d-box-key" x="372" y="166" width="150" height="70" rx="8"/><text class="d-tb" x="384" y="192">Place</text><text class="d-ts" x="384" y="212">centre x/z, base y = 0</text>
+        <rect class="d-box-key" x="548" y="166" width="152" height="70" rx="8"/><text class="d-tb" x="560" y="192">Write</text><text class="d-ts" x="560" y="212">.obj · .mtl · .png</text>
+        <path class="d-line" d="M170 201 H190" marker-end="url(#ah2)"/><path class="d-line" d="M346 201 H366" marker-end="url(#ah2)"/><path class="d-line" d="M522 201 H542" marker-end="url(#ah2)"/>
+      </svg>
+    </div>
+    <figcaption>Blue stages are Apple’s engine; amber stages are PhotoScan’s own code.</figcaption>
+  </figure>
+  <h3>How the session is driven</h3>
+  <p><code>ScanRunner</code> creates a <code>PhotogrammetrySession</code> on the photo folder, submits one <code>.modelFile</code> request at the chosen detail level, then listens to the session’s output stream:</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Session output</th><th>What PhotoScan does</th></tr></thead>
+    <tbody>
+      <tr><td><code>inputComplete</code></td><td>Shows “Photos read. Building the model…”</td></tr>
+      <tr><td><code>requestProgress</code></td><td>Moves the progress bar; the app estimates time left from elapsed time and fraction done.</td></tr>
+      <tr><td><code>invalidSample</code>, <code>skippedSample</code></td><td>Logs which photo was not used and why, so you can reshoot it.</td></tr>
+      <tr><td><code>automaticDownsampling</code></td><td>Logs that photos were scaled down to fit memory.</td></tr>
+      <tr><td><code>requestError</code></td><td>Stops and shows the error.</td></tr>
+      <tr><td><code>processingComplete</code></td><td>Checks the USDZ exists, then runs the OBJ export on a background thread.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Cancelling the app’s task cancels the session too, so a long Raw build can be stopped cleanly.</p>
+</section>
+
+<section id="options">
+  <h2><span class="num">1.3</span>Options</h2>
+  <p>Each switch in the window maps to one Object Capture setting or one export step.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>In the app</th><th>Setting</th><th>When to use it</th></tr></thead>
+    <tbody>
+      <tr><td>Preset</td><td>Sets Detail and sensitivity together</td><td>Quick shape (default, 3–20 photos): Reduced detail, high sensitivity. Balanced: Medium. Detailed: Full.</td></tr>
+      <tr><td>Detail</td><td><code>Request.Detail</code>: preview, reduced, medium, full, raw</td><td>Preview to test a setup in about a minute. Full for Blender. Raw only when you plan heavy retopology; files get very large.</td></tr>
+      <tr><td>Photos taken in order</td><td><code>sampleOrdering = .sequential</code></td><td>Turntable shoots where each photo follows the last. Speeds up matching. Leave off for photos in random order.</td></tr>
+      <tr><td>Plain or low-texture product</td><td><code>featureSensitivity = .high</code></td><td>White tubes, single-colour bottles, smooth caps. Slower, but finds more matching points.</td></tr>
+      <tr><td>Remove the background</td><td><code>isObjectMaskingEnabled</code></td><td>Keep on. Needed when you flip the product to shoot its base.</td></tr>
+      <tr><td>Also save an OBJ</td><td>OBJExporter</td><td>On for Blender. Off if you only want the USDZ.</td></tr>
+      <tr><td>Scale to the real height</td><td>OBJExporter scale factor</td><td>Always, unless the photos are iPhone HEICs with depth data.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="output">
+  <h2><span class="num">1.4</span>Output files</h2>
+  <p>Each run creates a folder named after the model:</p>
+<pre><code>lipstick/
+  lipstick.usdz        textured model from Object Capture
+  lipstick.obj         Blender-ready mesh, mm, Y up
+  lipstick.mtl         material (only when a texture was extracted)
+  lipstick_color.png   colour texture (only when extracted)</code></pre>
+  <p>The OBJ starts with a header so the file explains itself when opened in a text editor:</p>
+<pre><code># PhotoScan export (Apple Object Capture)
+# units: mm (1 unit = 1 mm), scaled to the known height you entered
+# size (W x H x D): 24.10 x 82.00 x 24.30 mm
+# vertices: 48211, triangles: 96418
+# Y is up; the base of the object sits at y = 0
+mtllib lipstick.mtl
+o lipstick
+v 3.112 0.000 -11.948        position (mm)
+vt 0.41237 0.77810           texture coordinate
+vn 0.2551 -0.9601 0.1145     normal
+usemtl scan
+f 1/1/1 2/2/2 3/3/3          triangle (vertex/uv/normal)</code></pre>
+  <div class="note info"><b>Why both files</b><p>The USDZ keeps every texture map Object Capture baked (colour, normal, roughness, ambient occlusion). The OBJ is the universal format for sculpting and printing tools, and PhotoScan gives it a predictable size and orientation.</p></div>
+</section>
+
+<section id="scale">
+  <h2><span class="num">1.5</span>Scale and placement</h2>
+  <p>Photos on their own carry no sense of size. A 10 cm bottle and a 1 m statue can produce the same set of images. Object Capture reports real size only when the photos include depth data, as iPhone HEIC photos can. Photos from a DSLR or mirrorless camera do not, so the raw model’s size is arbitrary.</p>
+  <p>PhotoScan fixes this with one measurement. You type the product’s real height; the exporter measures the model’s height and scales every vertex by the same factor:</p>
+<pre><code>scale  = real_height_mm / model_height
+v_out  = (v − centre) × scale
+centre = (mid-x, lowest y, mid-z) of the model</code></pre>
+  <p>Without a height, it converts Object Capture’s metres to millimetres (× 1000). Either way the object ends up centred on x and z with its base on y = 0, which is what Blender, sculpting tools and slicers expect.</p>
+  <div class="note warn"><b>Measure carefully</b><p>One measurement sets the whole scale, so a 1 mm error on an 80 mm product is a 1.25% error everywhere. Use calipers on the tallest straight dimension and include the cap if the cap is in the photos.</p></div>
+</section>
+
+<section id="interface">
+  <h2><span class="num">1.6</span>Interface</h2>
+  <p>One window, top to bottom in the order you use it:</p>
+  <ol>
+    <li><b>Photos.</b> Photo folder and save location (each with a <i>Choose…</i> button), and the model name, filled in from the folder name. Below the folder, a photo count, shown in amber below 20 photos.</li>
+    <li><b>Quality.</b> Detail level and the three Object Capture switches.</li>
+    <li><b>Size and export.</b> OBJ on or off, and the real-height field.</li>
+    <li><b>Build.</b> <i>Build 3D model</i> (becomes <i>Cancel</i> while running), a progress bar with the current stage and estimated time left. When finished: size in mm, triangle count, <i>Show in Finder</i> and <i>Preview USDZ</i>.</li>
+    <li><b>Log.</b> Every rejected photo with its reason, and the total time.</li>
+  </ol>
+  <h3>Command line</h3>
+<pre><code>photoscan-cli &lt;photos-folder&gt; &lt;output-folder&gt;
+              [--detail preview|reduced|medium|full|raw]
+              [--height-mm 82] [--sequential] [--high]
+              [--no-mask] [--no-obj] [--name lipstick]</code></pre>
+  <p>Useful for processing a whole product line overnight, one folder per product.</p>
+</section>
+
+<section id="build">
+  <h2><span class="num">1.7</span>Build and install</h2>
+  <p>PhotoScan is distributed as source and compiled on your own Mac. That avoids paying for an Apple developer certificate, and macOS trusts an app you built yourself.</p>
+<pre><code>xcode-select --install          # once: Apple's free compiler tools
+cd PhotoScan
+chmod +x build-app.sh
+./build-app.sh                  # builds dist/PhotoScan.app and dist/photoscan-cli</code></pre>
+  <p>The script calls <code>swiftc</code> directly instead of <code>swift build</code>. The Swift Package Manager asks for a platform path that a Command Line Tools-only install cannot provide, which fails with <code>unable to lookup item 'PlatformPath'</code>; calling the compiler directly avoids that and needs no Xcode. The script compiles the core and the app as one module, wraps the binary in an <code>.app</code> bundle with <code>Info.plist</code>, and signs it ad hoc for local use. Drag <code>PhotoScan.app</code> into Applications.</p>
+</section>
+
+<section id="limits">
+  <h2><span class="num">1.8</span>Limits and risks</h2>
+  <ul>
+    <li><b>Hardware.</b> Object Capture needs Apple Silicon or a strong supported GPU. On an unsupported Mac the session fails to start and the app shows the reason.</li>
+    <li><b>Texture in the OBJ is best effort.</b> The colour texture is extracted through ModelIO; if it cannot be read, the OBJ is written with shape only and the log says so. The USDZ always has full textures.</li>
+    <li><b>UV orientation.</b> If the OBJ texture looks scrambled in Blender, the texture coordinates need a vertical flip. Use the USDZ for colour and report it so the exporter can be adjusted.</li>
+    <li><b>Materials.</b> Transparent and mirror-like surfaces cannot be reconstructed from photos alone (see <a href="#materials">Difficult materials</a>).</li>
+    <li><b>Memory.</b> Very large sets of high-resolution photos may be downsampled automatically; the log reports it.</li>
+  </ul>
+</section>
+
+<div class="part">Part 2</div>
+<section id="how-many">
+  <h2><span class="num">2.1</span>How many photos</h2>
+  <p>What matters is <b>coverage and overlap</b>, not the raw count. Every part of the surface should appear sharply in at least three photos, and each photo should share about 70% of its view with the next.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Product</th><th class="num">Photos</th><th>Examples</th></tr></thead>
+    <tbody>
+      <tr><td>Quick rough shape (Quick shape preset)</td><td class="num">3–20</td><td>A base mesh to reshape in Blender. Very small sets may be rejected by Object Capture; add photos until it works</td></tr>
+      <tr><td>Simple shape</td><td class="num">40–60</td><td>Lipstick bullet, round jar, soap bar</td></tr>
+      <tr><td>Typical</td><td class="num">60–80</td><td>Perfume bottle, tube with a cap, compact</td></tr>
+      <tr><td>Complex</td><td class="num">80–120</td><td>Pump bottle, hinged palette, brush set</td></tr>
+      <tr><td>Including the base</td><td class="num">+20–24</td><td>One extra ring with the product flipped</td></tr>
+    </tbody>
+  </table></div>
+  <p>The plan in this guide (three rings of 24 plus 4 top shots) gives <b>76 photos</b>, enough for nearly any cosmetic product. Add the flipped ring for about 100.</p>
+  <div class="note info"><b>What 90% accuracy means here</b><p>For a matte or lightly textured product shot this way, Object Capture typically lands within about 1–2% of real dimensions, comfortably past 90%. Accuracy drops when reflections move between photos, when photos are soft, or when parts of the product were never seen.</p></div>
+</section>
+
+<section id="video">
+  <h2>Using a video instead of photos</h2>
+  <p>If you don’t want to take dozens of photos, film a short clip and choose <i>Source → Video</i>. PhotoScan pulls evenly spaced frames from it (about 2 per second by default; you can change the number). Around each point in time it looks at 3 nearby frames and keeps the sharpest, so a little hand shake doesn’t ruin the set. The frames are saved in <code>&lt;model&gt;/frames/</code> and scanned in order.</p>
+  <p>Copies of the same photo don’t help: Object Capture needs the same spot seen from <i>different</i> camera positions. A video gives you that for free, because every frame is a new position.</p>
+  <ul>
+    <li>One slow, full circle of 15–30 seconds, about an arm’s length away. A second, higher circle improves the top.</li>
+    <li>Or fix the camera and turn the product slowly on a turntable.</li>
+    <li>Lock exposure and focus (on an iPhone, long-press the product to set AE/AF lock). Shoot 4K if you can.</li>
+    <li>Move slowly and smoothly; motion blur is the main thing that spoils video frames.</li>
+    <li>The same lighting advice applies: soft, even, and cross-polarised for glossy packaging.</li>
+  </ul>
+</section>
+
+<section id="kit">
+  <h2><span class="num">2.2</span>Equipment</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Item</th><th>Why</th><th>Budget option</th></tr></thead>
+    <tbody>
+      <tr><td>Camera on a tripod</td><td>Identical framing and sharpness in every shot</td><td>Any camera with manual mode; phone in a clamp works too</td></tr>
+      <tr><td>Lens</td><td>Fill the frame without distortion</td><td>50–100 mm, or a macro lens for small items. Never change zoom mid-shoot</td></tr>
+      <tr><td>Turntable</td><td>Even 15° steps, the product never moves</td><td>Lazy Susan with 24 marks drawn around the edge</td></tr>
+      <tr><td>Two soft lights</td><td>Even light, no hard shadows</td><td>LED panels through diffusion fabric or baking paper</td></tr>
+      <tr><td>Polarising filter + polarising gel</td><td>Removes reflections on glossy packaging</td><td>Circular polariser for the lens; linear polariser film sheets for the lights</td></tr>
+      <tr><td>Plain matte background</td><td>Clean masking</td><td>Grey card or matte vinyl. Avoid glossy sweeps</td></tr>
+      <tr><td>Remote or timer</td><td>No shake</td><td>2-second self-timer</td></tr>
+      <tr><td>Calipers or ruler</td><td>True scale</td><td>Steel ruler, read carefully</td></tr>
+      <tr><td>Marker card (optional)</td><td>Gives plain products reference points</td><td>Printed newspaper text or a random dot pattern</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="studio">
+  <h2><span class="num">2.3</span>Studio setup</h2>
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 330" role="img" aria-label="Top view of the setup: product in the middle of a turntable on a grey background, two soft lights at 45 degrees left and right in front, the camera on a tripod in front at about 40 to 60 centimetres, and the turntable marked with 24 steps of 15 degrees.">
+        <defs><marker id="ah3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L8 4 L0 8 Z" class="d-fill-ink"/></marker></defs>
+        <rect class="d-ground" x="200" y="20" width="320" height="60" rx="6"/>
+        <text class="d-ts" x="300" y="55">plain matte background</text>
+        <circle cx="360" cy="150" r="70" class="d-box"/>
+        <g class="d-line">
+          <line x1="360" y1="80" x2="360" y2="90"/><line x1="395" y1="89.4" x2="390" y2="98"/><line x1="420.6" y1="115" x2="412" y2="120"/><line x1="430" y1="150" x2="420" y2="150"/><line x1="420.6" y1="185" x2="412" y2="180"/><line x1="395" y1="210.6" x2="390" y2="202"/><line x1="360" y1="220" x2="360" y2="210"/><line x1="325" y1="210.6" x2="330" y2="202"/><line x1="299.4" y1="185" x2="308" y2="180"/><line x1="290" y1="150" x2="300" y2="150"/><line x1="299.4" y1="115" x2="308" y2="120"/><line x1="325" y1="89.4" x2="330" y2="98"/>
+        </g>
+        <rect x="342" y="132" width="36" height="36" rx="6" class="d-box-key"/>
+        <text class="d-ta" x="440" y="110">15° per step</text>
+        <text class="d-ts" x="440" y="128">24 steps per ring</text>
+        <rect x="90" y="190" width="90" height="34" rx="6" class="d-box-info" transform="rotate(-45 135 207)"/>
+        <text class="d-tb" x="60" y="270">Soft light</text><text class="d-ts" x="60" y="288">45° left</text>
+        <rect x="540" y="190" width="90" height="34" rx="6" class="d-box-info" transform="rotate(45 585 207)"/>
+        <text class="d-tb" x="560" y="270">Soft light</text><text class="d-ts" x="560" y="288">45° right</text>
+        <path class="d-dash" d="M170 180 L320 160"/><path class="d-dash" d="M550 180 L400 160"/>
+        <rect x="330" y="278" width="60" height="34" rx="6" class="d-box"/>
+        <text class="d-tb" x="400" y="300">Camera</text>
+        <text class="d-ts" x="400" y="318">on tripod, 40–60 cm away</text>
+        <path class="d-line" d="M360 278 V228" marker-end="url(#ah3)"/>
+      </svg>
+    </div>
+    <figcaption>Top view. The camera and lights stay put; only the turntable moves.</figcaption>
+  </figure>
+  <ul>
+    <li>Place the product in the exact centre of the turntable so it doesn’t swing across the frame.</li>
+    <li>Leave a little space between the product and the background so masking separates them cleanly.</li>
+    <li>Wipe the product: dust and fingerprints show up as texture and confuse matching.</li>
+    <li>Remove loose parts that may shift (tilted caps, labels peeling). Anything that moves during the shoot will blur in the model.</li>
+  </ul>
+</section>
+
+<section id="lighting">
+  <h2><span class="num">2.4</span>Lighting</h2>
+  <p>Photogrammetry wants <b>flat, even, unchanging</b> light. That is different from beauty lighting: no rim lights, no dramatic shadows, no specular highlights. Shadows and highlights move as the turntable turns, and the software reads them as surface detail.</p>
+  <ul>
+    <li>Two large diffused lights at about 45° either side of the camera, equal power.</li>
+    <li>Optional soft fill from above to lift the top of the product.</li>
+    <li>Turn off room lights and window light that might change during the shoot.</li>
+    <li>Same light for every photo, including the flipped base ring.</li>
+  </ul>
+  <h3>Cross-polarisation for glossy packaging</h3>
+  <p>Glossy jars, lacquered caps and metallic compacts reflect the lights, and those reflections slide across the surface as the product turns. Cross-polarisation removes them.</p>
+  <ol>
+    <li>Cover each light with linear polarising film, all sheets in the same orientation.</li>
+    <li>Fit a circular polariser to the lens.</li>
+    <li>Look through the camera at a shiny part of the product and rotate the lens polariser until the reflections disappear (about 90° to the film).</li>
+    <li>Expect to lose about 1.5–2 stops of light; lengthen the shutter speed, not the ISO.</li>
+  </ol>
+  <div class="note warn"><b>Matte finish matters more than photo count</b><p>On glossy products, cross-polarised light is the single biggest step toward an accurate model. Doubling the number of photos does not fix reflections.</p></div>
+</section>
+
+<section id="camera">
+  <h2><span class="num">2.5</span>Camera settings</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Setting</th><th>Value</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>Mode</td><td>Manual (M)</td><td>Exposure must not change between photos</td></tr>
+      <tr><td>Aperture</td><td>f/8–f/11 (f/11–f/16 for small items with a macro lens)</td><td>The whole product sharp, front to back</td></tr>
+      <tr><td>ISO</td><td>100–200</td><td>Noise looks like fake texture</td></tr>
+      <tr><td>Shutter</td><td>Whatever exposes correctly; tripod makes slow speeds fine</td><td>Use a timer or remote</td></tr>
+      <tr><td>Focus</td><td>Manual, set once on the product’s centre</td><td>Autofocus may hunt and shift the focus distance</td></tr>
+      <tr><td>White balance</td><td>Fixed (Kelvin or a custom setting)</td><td>Consistent colour across the texture</td></tr>
+      <tr><td>Zoom</td><td>Fixed for the whole shoot</td><td>Changing focal length breaks the camera model</td></tr>
+      <tr><td>Stabilisation</td><td>Off on a tripod</td><td>Can introduce slight drift</td></tr>
+      <tr><td>Format</td><td>RAW + JPEG, or RAW exported to full-size JPEG</td><td>PhotoScan reads JPEG, HEIC and PNG</td></tr>
+      <tr><td>Framing</td><td>Product fills 50–70% of the frame</td><td>Enough pixels on the surface, room for masking</td></tr>
+    </tbody>
+  </table></div>
+  <p>When exporting from RAW: no cropping, no lens-profile corrections, no perspective changes, and no heavy sharpening. Gentle exposure and white-balance fixes are fine if applied the same way to every photo.</p>
+</section>
+
+<section id="shoot">
+  <h2><span class="num">2.6</span>The shoot, step by step</h2>
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 320" role="img" aria-label="Side view of camera heights: low ring at 10 to 15 degrees, middle ring at 30 to 35 degrees, high ring at 55 to 60 degrees, and top shots almost overhead, all pointing at the product on the turntable.">
+        <defs><marker id="ah4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0 L8 4 L0 8 Z" class="d-fill-accent"/></marker></defs>
+        <rect class="d-ground" x="60" y="270" width="600" height="14" rx="3"/>
+        <rect x="230" y="258" width="160" height="12" rx="3" class="d-box"/>
+        <rect x="290" y="198" width="40" height="60" rx="6" class="d-box-key"/>
+        <path class="d-dash" d="M310 228 m200 -36 A 204 204 0 0 0 310 24"/>
+        <circle cx="508" cy="190" r="12" class="d-box-info"/><path class="d-accent" d="M496 192 L332 225" marker-end="url(#ah4)"/>
+        <text class="d-tb" x="528" y="186">Ring 1 · low</text><text class="d-ts" x="528" y="204">10–15° down · 24 shots</text>
+        <circle cx="478" cy="114" r="12" class="d-box-info"/><path class="d-accent" d="M467 120 L333 218" marker-end="url(#ah4)"/>
+        <text class="d-tb" x="498" y="110">Ring 2 · middle</text><text class="d-ts" x="498" y="128">30–35° down · 24 shots</text>
+        <circle cx="416" cy="52" r="12" class="d-box-info"/><path class="d-accent" d="M409 63 L327 205" marker-end="url(#ah4)"/>
+        <text class="d-tb" x="436" y="48">Ring 3 · high</text><text class="d-ts" x="436" y="66">55–60° down · 24 shots</text>
+        <circle cx="318" cy="30" r="12" class="d-box-info"/><path class="d-accent" d="M316 42 L312 192" marker-end="url(#ah4)"/>
+        <text class="d-tb" x="140" y="26">Top</text><text class="d-ts" x="140" y="44">near overhead · 4–6 shots</text>
+        <text class="d-tm" x="150" y="300">turntable turns 15° between shots; camera stays fixed in each ring</text>
+      </svg>
+    </div>
+    <figcaption>Side view of the camera positions. Keep the distance to the product the same in every ring.</figcaption>
+  </figure>
+  <ol class="steps">
+    <li><b class="t">Prepare</b><p>Clean the product, centre it on the turntable, set the lights and polarisers, and lock the camera settings. Take one test shot and check it at 100% for sharpness and reflections.</p></li>
+    <li><b class="t">Ring 1: low (24 photos)</b><p>Camera slightly above table level, 10–15° looking down. Shoot, turn 15°, shoot, until you are back at the start. This ring captures the sides and the lower edge.</p></li>
+    <li><b class="t">Ring 2: middle (24 photos)</b><p>Raise the tripod to 30–35° looking down, re-centre the product in the frame without touching focus or zoom, and repeat the full turn.</p></li>
+    <li><b class="t">Ring 3: high (24 photos)</b><p>Raise again to 55–60°. Repeat the full turn. Shoulders, caps and the top edge come from this ring.</p></li>
+    <li><b class="t">Top shots (4–6 photos)</b><p>From almost directly above, at 90° turns of the turntable. These fill in flat tops and lids.</p></li>
+    <li><b class="t">Base (optional, 20–24 photos)</b><p>Lay the product on its side or upside down in the same light and shoot one more ring at about 30°. Keep <i>Remove the background</i> on in PhotoScan so Object Capture can join the two orientations. Skip this if the base will sit flat in your sculpture anyway; PhotoScan already flattens the base at y = 0.</p></li>
+    <li><b class="t">Review</b><p>Flick through every photo at 100%. Delete blurry, mis-exposed or obstructed frames rather than keeping them. A gap of one missing photo is better than a soft one.</p></li>
+    <li><b class="t">Export</b><p>Export full-resolution JPEGs (or keep HEICs) into one folder named after the product, for example <code>lipstick/</code>. Keep the original order of the files.</p></li>
+  </ol>
+</section>
+
+<section id="materials">
+  <h2><span class="num">2.7</span>Difficult materials</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Surface</th><th>Problem</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Glossy plastic, lacquer</td><td>Moving reflections become bumps and holes</td><td>Cross-polarise. If not possible, a removable matte spray</td></tr>
+      <tr><td>Metallic, chrome caps</td><td>Mirror reflections, no stable surface texture</td><td>Cross-polarisation helps partly; vanishing scanning spray, or model the cap in Blender</td></tr>
+      <tr><td>Clear glass or plastic</td><td>Software sees through it or sees the background</td><td>Vanishing scanning spray, or model from measurements. Photos alone won’t work</td></tr>
+      <tr><td>Plain white or single colour</td><td>Nothing to match between photos</td><td>Turn on <i>Plain or low-texture product</i>; put a marker card or small stickers on the turntable around it</td></tr>
+      <tr><td>Very small (under 3 cm)</td><td>Shallow depth of field</td><td>Macro at f/11–f/16, or focus stacking per position</td></tr>
+      <tr><td>Thin parts (brush bristles, pump straws)</td><td>Thinner than the reconstruction detail</td><td>Expect to rebuild them in Blender</td></tr>
+      <tr><td>Labels with fine print</td><td>Fine in the texture, too fine for geometry</td><td>No action needed; the texture carries it</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><b>Scanning sprays</b><p>Vanishing sprays sublimate after a few hours and leave no residue, but test on a hidden spot first. They are not suitable for products you are going to photograph for sale the same day.</p></div>
+</section>
+
+<section id="process">
+  <h2><span class="num">2.8</span>Processing in PhotoScan</h2>
+  <ol>
+    <li>Open PhotoScan and choose the photo folder. Check the photo count.</li>
+    <li>Choose where to save. The name defaults to the folder name.</li>
+    <li>Turn on <i>Photos taken in order</i> for turntable shoots.</li>
+    <li>Turn on <i>Plain or low-texture product</i> only if the product has little surface detail.</li>
+    <li>Turn on <i>Scale to the real height</i> and type the calliper measurement in mm.</li>
+    <li>Run <b>Preview</b> first. If it looks complete, run again at <b>Full</b>.</li>
+    <li>Read the log: if several photos were rejected from one part of a ring, reshoot that part.</li>
+  </ol>
+  <h3>Importing into Blender</h3>
+  <ul>
+    <li><b>OBJ:</b> File → Import → Wavefront (.obj). Keep Up = Y and Forward = −Z. Set <b>Scale = 0.001</b>, because the file is in millimetres and Blender works in metres. Alternatively set the scene’s unit scale to 0.001.</li>
+    <li><b>USDZ:</b> File → Import → Universal Scene Description, if your Blender version accepts .usdz. Use it when you want all texture maps.</li>
+  </ul>
+</section>
+
+<section id="verify">
+  <h2><span class="num">2.9</span>Checking accuracy</h2>
+  <p>Measure three things on the real product with calipers and on the model in Blender (enable the <i>Measure</i> tool, or read the object’s Dimensions in the N panel):</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Measurement</th><th class="num">Real (mm)</th><th class="num">Model (mm)</th><th class="num">Error</th></tr></thead>
+    <tbody>
+      <tr><td>Overall height</td><td class="num">82.0</td><td class="num">82.0</td><td class="num">set by scale</td></tr>
+      <tr><td>Widest diameter</td><td class="num">24.3</td><td class="num">24.1</td><td class="num">0.8%</td></tr>
+      <tr><td>Cap diameter</td><td class="num">21.0</td><td class="num">21.3</td><td class="num">1.4%</td></tr>
+    </tbody>
+  </table></div>
+  <p><i>Example figures for illustration.</i> Height is fixed by the scaling, so judge accuracy on the other measurements. Under 5% error on each is a good scan; under 10% meets the 90% target.</p>
+</section>
+
+<section id="troubleshooting">
+  <h2><span class="num">2.10</span>Troubleshooting</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>What you see</th><th>Likely cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>Holes or craters on shiny areas</td><td>Reflections moved between photos</td><td>Cross-polarise; reshoot</td></tr>
+      <tr><td>Missing or melted top</td><td>Not enough high-angle photos</td><td>Add Ring 3 and top shots</td></tr>
+      <tr><td>Two copies of the product, or a broken model</td><td>Product moved on the turntable, or the background was matched instead</td><td>Fix the product in place; keep <i>Remove the background</i> on; plain background</td></tr>
+      <tr><td>Many photos rejected in the log</td><td>Blur, too little overlap, or very plain surface</td><td>Smaller turntable steps, sharper photos, <i>Plain or low-texture</i> on</td></tr>
+      <tr><td>Lumpy surface everywhere</td><td>High ISO noise or soft focus</td><td>ISO 100–200, f/8–f/11, tripod and timer</td></tr>
+      <tr><td>Patchy colour in the texture</td><td>Exposure or white balance changed</td><td>Manual exposure and fixed white balance</td></tr>
+      <tr><td>Model the wrong size</td><td>No height entered</td><td>Turn on <i>Scale to the real height</i></td></tr>
+      <tr><td>“Object Capture can’t run on this Mac”</td><td>Unsupported GPU</td><td>Use an Apple Silicon Mac</td></tr>
+      <tr><td>Build error: <code>unable to lookup item 'PlatformPath'</code></td><td>Swift Package Manager with Command Line Tools only</td><td>Use the included <code>build-app.sh</code>, which calls <code>swiftc</code> directly</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="checklist">
+  <h2><span class="num">2.11</span>Shoot-day checklist</h2>
+  <ul class="checklist">
+    <li>Product cleaned and centred on the turntable</li>
+    <li>Plain matte background, gap behind the product</li>
+    <li>Two diffused lights at 45°, room lights off</li>
+    <li>Polarisers set for glossy surfaces</li>
+    <li>Tripod locked, timer or remote on</li>
+    <li>Manual mode, f/8–f/11, ISO 100–200</li>
+    <li>Manual focus set, zoom fixed, stabilisation off</li>
+    <li>White balance fixed</li>
+    <li>Test shot checked at 100%</li>
+    <li>Ring 1 · low · 24 shots</li>
+    <li>Ring 2 · middle · 24 shots</li>
+    <li>Ring 3 · high · 24 shots</li>
+    <li>Top · 4–6 shots</li>
+    <li>Base ring (optional) · 20–24 shots</li>
+    <li>Blurry frames deleted</li>
+    <li>Full-size JPEGs in one folder</li>
+    <li>Height measured with calipers</li>
+    <li>Preview run, then Full</li>
+  </ul>
+</section>
+
+<footer>
+  PhotoScan uses Apple’s Object Capture (RealityKit <code>PhotogrammetrySession</code>). See Apple’s documentation: <a href="https://developer.apple.com/documentation/realitykit/creating-3d-objects-from-photographs">Creating 3D objects from photographs</a>.
+</footer>
+</main>
+</div>
+
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch between light and dark theme">Theme</button>
+<script>
+(function () {
+  var root = document.documentElement, key = 'photoscan-theme';
+  try { var saved = localStorage.getItem(key); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    var cur = root.getAttribute('data-theme') ||
+      (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem(key, next); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
