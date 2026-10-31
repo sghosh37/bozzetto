@@ -1,5 +1,6 @@
 import Foundation
 import RealityKit
+import CryptoKit
 
 /// How much detail Object Capture builds. Higher = slower and bigger files.
 public enum DetailLevel: String, CaseIterable, Identifiable, Sendable {
@@ -54,6 +55,7 @@ public enum ScanError: LocalizedError {
     case notSupported(String)
     case noPhotos
     case tooFewPhotos(Int)
+    case copiesOnly(total: Int, unique: Int)
     case buildFailed(photos: Int, detail: String)
     case noModel
 
@@ -65,6 +67,8 @@ public enum ScanError: LocalizedError {
             return "That folder has no JPEG, HEIC or PNG photos."
         case .tooFewPhotos(let n):
             return "Only \(n) photo\(n == 1 ? "" : "s"). Object Capture needs at least \(PhotoFolder.minimumPhotos) overlapping photos of the object; 60–80 gives a good model."
+        case .copiesOnly(let total, let unique):
+            return "\(total) photos, but only \(unique) are different; the rest are copies. Copies show the object from the same position, so they add nothing Object Capture can use. Take more photos from new angles, or use a short video (Source → Video)."
         case .buildFailed(let n, let detail):
             var why = "Object Capture couldn’t build a model from these \(n) photos."
             if n < 10 {
@@ -88,8 +92,43 @@ public enum PhotoFolder {
     public static let minimumPhotos = 3
 
     public static func count(in folder: URL) -> Int {
+        photos(in: folder).count
+    }
+
+    public static func photos(in folder: URL) -> [URL] {
         let items = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
-        return items.filter { extensions.contains($0.pathExtension.lowercased()) }.count
+        return items.filter { extensions.contains($0.pathExtension.lowercased()) }
+    }
+
+    /// How many photos are byte-for-byte copies of another photo in the folder.
+    /// Copies add no new viewpoint, so Object Capture can't use them.
+    public static func duplicateCount(in folder: URL) -> Int {
+        var seen = Set<Data>()
+        var dups = 0
+        for url in photos(in: folder) {
+            guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
+            let key = Data(SHA256.hash(data: data))
+            if !seen.insert(key).inserted { dups += 1 }
+        }
+        return dups
+    }
+}
+
+/// Holds Object Capture sessions until they have finished, then lets them go on the main thread.
+final class SessionKeeper: @unchecked Sendable {
+    static let shared = SessionKeeper()
+    private var sessions: [ObjectIdentifier: PhotogrammetrySession] = [:]
+    private let lock = NSLock()
+
+    func keep(_ s: PhotogrammetrySession) {
+        lock.lock(); sessions[ObjectIdentifier(s)] = s; lock.unlock()
+    }
+
+    func releaseLater(_ s: PhotogrammetrySession) {
+        let id = ObjectIdentifier(s)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [self] in
+            lock.lock(); sessions[id] = nil; lock.unlock()
+        }
     }
 }
 
@@ -102,6 +141,8 @@ public enum ScanRunner {
         let photoCount = PhotoFolder.count(in: input)
         guard photoCount > 0 else { throw ScanError.noPhotos }
         guard photoCount >= PhotoFolder.minimumPhotos else { throw ScanError.tooFewPhotos(photoCount) }
+        let unique = photoCount - PhotoFolder.duplicateCount(in: input)
+        guard unique >= PhotoFolder.minimumPhotos else { throw ScanError.copiesOnly(total: photoCount, unique: unique) }
 
         var config = PhotogrammetrySession.Configuration()
         config.sampleOrdering = options.sequential ? .sequential : .unordered
@@ -121,36 +162,47 @@ public enum ScanRunner {
         onEvent(.stage("Reading photos…"))
         try session.process(requests: [.modelFile(url: usdzURL, detail: options.detail.request)])
 
-        try await withTaskCancellationHandler {
-            for try await output in session.outputs {
-                switch output {
-                case .inputComplete:
-                    onEvent(.stage("Photos read. Building the model…"))
-                case .requestProgress(_, let fraction):
-                    onEvent(.progress(fraction))
-                case .requestComplete(_, _):
-                    onEvent(.progress(1))
-                    onEvent(.stage("Model built."))
-                case .requestError(_, let error):
-                    throw ScanError.buildFailed(photos: photoCount, detail: String(describing: error))
-                case .invalidSample(let id, let reason):
-                    onEvent(.message("Photo #\(id) not used: \(reason)"))
-                case .skippedSample(let id):
-                    onEvent(.message("Photo #\(id) skipped."))
-                case .automaticDownsampling:
-                    onEvent(.message("Photos were scaled down automatically to fit in memory."))
-                case .processingCancelled:
-                    throw CancellationError()
-                case .processingComplete:
-                    return
-                default:
-                    break
+        // Keep the session alive until Object Capture has completely finished, and release it later on
+        // the main thread. Releasing it from inside its own completion callback deadlocks
+        // CorePhotogrammetry and crashes the app ("dispatch_sync called on queue already owned").
+        SessionKeeper.shared.keep(session)
+        defer { SessionKeeper.shared.releaseLater(session) }
+
+        // Errors are remembered, not thrown mid-stream, so the output stream is always read to its end.
+        var failure: Error? = nil
+        await withTaskCancellationHandler {
+            do {
+                for try await output in session.outputs {
+                    switch output {
+                    case .inputComplete:
+                        onEvent(.stage("Photos read. Building the model…"))
+                    case .requestProgress(_, let fraction):
+                        onEvent(.progress(fraction))
+                    case .requestComplete(_, _):
+                        onEvent(.progress(1))
+                        onEvent(.stage("Model built."))
+                    case .requestError(_, let error):
+                        if failure == nil { failure = ScanError.buildFailed(photos: photoCount, detail: String(describing: error)) }
+                    case .invalidSample(let id, let reason):
+                        onEvent(.message("Photo #\(id) not used: \(reason)"))
+                    case .skippedSample(let id):
+                        onEvent(.message("Photo #\(id) skipped."))
+                    case .automaticDownsampling:
+                        onEvent(.message("Photos were scaled down automatically to fit in memory."))
+                    case .processingCancelled:
+                        if failure == nil { failure = CancellationError() }
+                    default:
+                        break     // processingComplete ends the stream on its own
+                    }
                 }
+            } catch {
+                if failure == nil { failure = error }
             }
         } onCancel: {
             session.cancel()
         }
 
+        if let failure { throw failure }
         guard FileManager.default.fileExists(atPath: usdzURL.path) else { throw ScanError.noModel }
     }
 }
