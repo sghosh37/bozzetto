@@ -1,0 +1,185 @@
+<!doctype html>
+<!-- Bozzetto: photos to a rough 3D shape for sculpting
+     Copyright (C) 2026 Suman Ghosh
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bozzetto in the browser</title>
+<meta name="description" content="Turn turntable photos or a short video into a rough 3D model (OBJ) for Blender, right in your browser. Nothing is uploaded.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="site.css">
+<style>
+.app { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); min-height: calc(100vh - 58px); }
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.panel { border-right: 1px solid var(--rule); padding: 20px max(16px, env(safe-area-inset-left, 0px)) 40px; display: flex; flex-direction: column; gap: 22px; background: var(--surface); }
+@media (max-width: 860px) { .panel { border-right: 0; border-bottom: 1px solid var(--rule); } }
+.panel h2 { font-size: 21px; margin-bottom: 8px; }
+.step-n { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--plaster);
+  font: 600 13px var(--body); margin-right: 8px; vertical-align: 2px; }
+.hint { font-size: 14.5px; color: var(--ink-2); }
+
+.drop { border: 1.5px dashed var(--ink-2); border-radius: 12px; padding: 18px 16px; text-align: center; background: var(--plaster); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop p { margin: 0 0 12px; }
+.drop .pick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.drop .pick .btn { min-height: 40px; padding: 7px 14px; font-size: 14.5px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.summary { font-size: 14.5px; }
+.summary .count { font-weight: 600; font-size: 16px; }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 4px; margin-top: 8px; }
+.thumbs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; background: var(--sunk); }
+
+.field { display: grid; gap: 4px; margin-bottom: 14px; }
+.field label, .field legend { font-weight: 600; font-size: 15px; }
+.field input[type=number] { font: 16px var(--body); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--rule); background: var(--plaster); color: var(--ink); width: 9em; }
+fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg label { font-weight: 400; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--plaster); cursor: pointer; font-size: 14.5px; }
+.seg input { accent-color: var(--accent); margin: 0; }
+.seg label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.field .hint { margin: 0; }
+
+.go { display: flex; gap: 10px; flex-wrap: wrap; }
+.go .primary { flex: 1 1 auto; }
+.progress { display: grid; gap: 6px; }
+.bar { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s linear; }
+.bar.busy > i { width: 35%; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+.stage { font-size: 14.5px; color: var(--ink-2); }
+.log { margin: 0; padding-left: 18px; font-size: 13.5px; color: var(--ink-2); }
+
+.msg { border-radius: 10px; padding: 11px 14px; font-size: 14.5px; }
+.msg.warn { background: var(--warn-soft); color: var(--ink); }
+.msg.bad { background: var(--bad-soft); color: var(--ink); }
+.msg b { display: block; }
+.msg ul { margin: 4px 0 0; padding-left: 18px; }
+.msg details { margin-top: 6px; font-size: 13px; }
+.msg pre { white-space: pre-wrap; font-size: 12px; margin: 4px 0 0; }
+
+.stagearea { position: sticky; top: 0; align-self: start; height: 100vh; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+@media (max-width: 860px) { .stagearea { position: relative; height: auto; grid-template-rows: 72vh auto; } }
+.view { position: relative; min-height: 320px; background:
+  radial-gradient(ellipse at 50% 85%, var(--sunk) 0, transparent 60%), var(--plaster); }
+.view canvas { position: absolute; inset: 0; }
+.empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--ink-2); pointer-events: none; }
+.empty div { max-width: 34ch; }
+.empty strong { display: block; font-family: var(--display); font-size: 26px; color: var(--ink); margin-bottom: 6px; }
+.viewhelp { position: absolute; left: 14px; bottom: 10px; font-size: 13px; color: var(--ink-2); pointer-events: none; }
+
+.result { border-top: 1px solid var(--rule); padding: 16px max(16px, env(safe-area-inset-right, 0px)) 22px 20px; display: flex; flex-wrap: wrap; gap: 14px 32px; align-items: center; background: var(--surface); }
+.result dl { display: flex; flex-wrap: wrap; gap: 4px 28px; margin: 0; }
+.result dt { font-size: 13px; color: var(--ink-2); }
+.result dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.result .dl { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.blender { flex-basis: 100%; font-size: 14px; color: var(--ink-2); margin: 0; padding-right: 72px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="../">Bozzetto <small>in the browser</small></a>
+  <nav aria-label="Site">
+    <a href="../">Home</a>
+    <a href="../docs/capture.html">How to take the photos</a>
+    <a href="../docs/design.html">Software design</a>
+    <a href="https://github.com/sghosh37/3d-scan">Source code</a>
+  </nav>
+</header>
+
+<main class="app">
+  <section class="panel" aria-label="Scan settings">
+    <div>
+      <h2><span class="step-n" aria-hidden="true">1</span>Add photos or a video</h2>
+      <div class="drop" id="drop">
+        <p>Drop turntable photos, a folder of them, or a video here.</p>
+        <div class="pick">
+          <label class="btn" for="pickPhotos">Choose photos</label>
+          <label class="btn" for="pickFolder">Choose a folder</label>
+          <label class="btn" for="pickVideo">Choose a video</label>
+        </div>
+        <input class="sr" type="file" id="pickPhotos" accept="image/*" multiple>
+        <input class="sr" type="file" id="pickFolder" webkitdirectory multiple>
+        <input class="sr" type="file" id="pickVideo" accept="video/*">
+      </div>
+      <p class="hint" style="margin-top:10px">At least 6 photos of one full turn, camera fixed, plain backdrop. Photos are used in file-name order. Nothing is uploaded: everything runs on this computer.</p>
+      <div class="summary" id="summary" hidden></div>
+    </div>
+
+    <div>
+      <h2><span class="step-n" aria-hidden="true">2</span>Check the settings</h2>
+      <div class="field">
+        <label for="height">Real height of the object, in mm</label>
+        <input type="number" id="height" min="1" step="0.1" inputmode="decimal" placeholder="e.g. 82">
+        <p class="hint">Photos carry no scale. Leave empty to make the model 100 mm high.</p>
+      </div>
+      <div class="field">
+        <label for="tilt">Camera tilt, in degrees down</label>
+        <input type="number" id="tilt" min="0" max="60" step="1" value="20">
+        <p class="hint">How far the camera looks down at the turntable. 20° suits most shoots.</p>
+      </div>
+      <fieldset class="field">
+        <legend>Turntable turned</legend>
+        <div class="seg">
+          <label><input type="radio" name="dir" value="anti" checked> Anticlockwise</label>
+          <label><input type="radio" name="dir" value="clock"> Clockwise</label>
+        </div>
+        <p class="hint">Seen from above. If the model comes out as a thin twisted shape, try the other way.</p>
+      </fieldset>
+      <fieldset class="field">
+        <legend>Detail</legend>
+        <div class="seg">
+          <label><input type="radio" name="preset" value="quick" checked> Quick</label>
+          <label><input type="radio" name="preset" value="accurate"> Fine</label>
+        </div>
+      </fieldset>
+      <div class="field" id="framesField" hidden>
+        <label for="frames">Frames to take from the video</label>
+        <input type="number" id="frames" min="6" max="120" step="1" value="40">
+      </div>
+    </div>
+
+    <div>
+      <h2><span class="step-n" aria-hidden="true">3</span>Build</h2>
+      <div class="go">
+        <button class="btn primary" id="build" disabled>Build 3D model</button>
+        <button class="btn" id="cancel" hidden>Cancel</button>
+      </div>
+      <div class="progress" id="progress" hidden style="margin-top:12px">
+        <div class="bar" id="bar"><i></i></div>
+        <div class="stage" id="stage" aria-live="polite"></div>
+        <ul class="log" id="log"></ul>
+      </div>
+      <div id="messages" style="margin-top:12px; display:grid; gap:10px"></div>
+    </div>
+  </section>
+
+  <section class="stagearea" aria-label="3D model">
+    <div class="view">
+      <canvas class="mesh" id="canvas" tabindex="0" aria-label="3D model preview. Drag or use the arrow keys to turn it."></canvas>
+      <div class="empty" id="empty"><div><strong>Your model appears here</strong>Add photos, check the settings, then build. A turn of 24 photos takes about ten seconds.</div></div>
+      <p class="viewhelp" id="viewhelp" hidden>Drag to turn, scroll to zoom, double-click to reset</p>
+    </div>
+    <div class="result" id="result" hidden>
+      <dl>
+        <div><dt>Size (W × H × D)</dt><dd id="rSize"></dd></div>
+        <div><dt>Triangles</dt><dd id="rTris"></dd></div>
+        <div><dt>Built in</dt><dd id="rTime"></dd></div>
+      </dl>
+      <div class="dl">
+        <a class="btn primary" id="dlObj" download>Download OBJ</a>
+        <a class="btn" id="dlGlb" download>Download GLB</a>
+      </div>
+      <p class="blender">In Blender: File › Import › Wavefront (.obj), and set Scale to 0.001 so the millimetres come in at real size. Y is up and the base sits at zero.</p>
+    </div>
+  </section>
+</main>
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch between light and dark theme">Theme</button>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

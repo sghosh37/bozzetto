@@ -16,18 +16,33 @@ for you to refine and finish in Blender.
 **Photos to a rough 3D shape for sculpting.** Bozzetto turns product photos, or a short video
 circling the product, into a closed OBJ mesh, in millimetres, Y up, base at 0, that you refine in Blender.
 
-It runs on **Windows, Linux and macOS** and picks a scanning engine for your photos and your computer:
+It runs on **Windows, Linux and macOS**, and a lite version runs **in the browser** with nothing to
+install. It picks a scanning engine for your photos and your computer:
 
 | Engine | Photos | Status |
 |---|---|---|
 | **TripoSR**: AI shape from one photo (hidden sides guessed) | 1+ | ✅ stage 2 |
-| **Turntable silhouette**: carves the outline from every angle | 6–30 on a turntable | ✅ stage 1 |
+| **Turntable silhouette**: carves the outline from every angle | 6–30 on a turntable | ✅ stage 1, and in the browser (stage 6) |
 | **Apple Object Capture**: photogrammetry built into macOS | 20+ | ⏳ stage 3 (Mac) |
 | **COLMAP + OpenMVS**: open-source photogrammetry | 20+ | ⏳ stage 4 |
 
 Licence: **GPL-3.0-or-later**. Third-party parts and their licences: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-## Install (from source, for now)
+## In the browser
+
+Open the home page, `index.html`, and choose **Try it in your browser** (the app is `web/`). Drop
+turntable photos, a folder or a video; the model is built on your computer and nothing is uploaded.
+It uses the turntable silhouette engine, so it needs at least 6 photos of a full turn.
+
+Browsers only run it from a web address, not from a file opened directly. Either publish the
+repository with GitHub Pages (Settings › Pages › Deploy from branch `main`, folder `/`; it appears at
+`https://sghosh37.github.io/3d-scan/`), or serve a copy locally:
+
+```
+python -m http.server 8000      # in the repository folder, then open http://localhost:8000/
+```
+
+## Install the desktop app (from source, for now)
 
 Needs Python 3.10 or newer.
 
@@ -83,11 +98,15 @@ bozzetto/
   engines/      base, silhouette, triposr (+ vendored tsr/, MIT), later (Apple, COLMAP: planned)
   cli.py
 macos/bozzetto-capture/   Swift helper for Apple Object Capture (stage 3)
-tests/          unit tests and synthetic turntable scans
+web/            browser version: index.html, js/ (app, worker, viewer, video, core/ = the ported engine)
+index.html      home page (GitHub Pages)
+tests/          unit tests, synthetic turntable scans, browser-vs-desktop parity (tests/web/)
 docs/           capture.html, design.html, src/ (builds design.html)
 ```
 
-Run the tests with `pip install -e ".[dev]"` then `pytest`.
+Run the tests with `pip install -e ".[dev]"` then `pytest`. The browser parity tests also need
+Node.js 18 or newer (they are skipped without it). `python tests/web/make_sample.py` rebuilds the
+model shown on the home page.
 
 Change the automatic engine choice in `bozzetto/core/select.py` (`RULES`), and the silhouette
 engine’s detail in `bozzetto/engines/silhouette.py` (voxel resolution 160 / 224).

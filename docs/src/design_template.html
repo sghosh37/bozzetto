@@ -220,21 +220,23 @@ footer { margin-top: 80px; padding-top: 18px; border-top: 1px solid var(--rule);
       <tr><td>Window (PySide6)</td><td>Built</td><td>Every handler exercised against a mock Qt (inspect, choose, build, fail, retry, save settings). First real run on your computer</td></tr>
       <tr><td>bozzetto-cli</td><td>Built</td><td>Used for the synthetic scans</td></tr>
       <tr><td>Apple Object Capture engine</td><td>Planned (stage 3)</td><td>Swift helper moved to <code>macos/bozzetto-capture</code>; needs <code>--json</code> and the session-release fix</td></tr>
-      <tr><td>COLMAP + OpenMVS, packaging, browser version</td><td>Planned (stages 4–6)</td><td>–</td></tr>
+      <tr><td>Browser version (<code>web/</code>)</td><td>Built (stage 6)</td><td>Same synthetic scans run through the browser engine in Node: size matches the desktop app within 0.1% and the triangle count within 0.1%; cut-outs differ on under 0.02% of pixels; morphology identical to OpenCV. Run end to end in Chromium with photos and with a video</td></tr>
+      <tr><td>Home page (<code>index.html</code>)</td><td>Built (stage 6)</td><td>Checked in Chromium at desktop and phone widths, light and dark</td></tr>
+      <tr><td>COLMAP + OpenMVS, packaging</td><td>Planned (stages 4–5)</td><td>–</td></tr>
     </tbody>
   </table></div>
 </section>
 
 <section id="stages">
   <h2><span class="num">2</span>Build stages</h2>
-  <p class="prose">Each stage ends with something that runs. Stages 1–2 are built; the rest follow one at a time, and this page is updated with each.</p>
+  <p class="prose">Each stage ends with something that runs. Stages 1, 2 and 6 are built; the rest follow one at a time, and this page is updated with each.</p>
   <div class="cards">
     <div class="card"><span class="k ok">Stage 1 · built</span><span class="t">App, engine choice, silhouette engine</span><span>Qt window, photo and video input, copy detection, hardware detection, selector, silhouette engine, OBJ/GLB export, CLI, tests, GPL headers and notices.</span><span class="done">Done: synthetic bottle within 1%, closed mesh.</span></div>
     <div class="card"><span class="k ok">Stage 2 · built</span><span class="t">TripoSR</span><span>Vendored inference code, one-time model download, Bozzetto’s own cut-out, CUDA / MPS / CPU, scale to height.</span><span class="done">Done: wrapper tested; real-model run pending on a PyTorch machine.</span></div>
     <div class="card"><span class="k slate">Stage 3</span><span class="t">Apple engine</span><span>bozzetto-capture gains --json and the session fix; apple.py runs it on macOS 12+ with Apple Silicon.</span><span class="done">Done when the same video gives a model on a Mac.</span></div>
     <div class="card"><span class="k blue">Stage 4</span><span class="t">COLMAP + OpenMVS</span><span>Download official binaries, run the pipeline, CPU fallback with a time warning, progress from logs.</span><span class="done">Done when 40 photos give a textured mesh on Windows with and without NVIDIA.</span></div>
     <div class="card"><span class="k orange">Stage 5</span><span class="t">Packaging</span><span>PyInstaller per system, GitHub Actions runners, the Mac build bundles bozzetto-capture, release page.</span><span class="done">Done when a tagged release gives three downloads that start without Python.</span></div>
-    <div class="card"><span class="k teal">Stage 6</span><span class="t">Browser version and home page</span><span>Silhouette engine in the browser, nothing uploaded; root index.html linking Try it, Downloads, Capture guide, Design; GitHub Pages.</span><span class="done">Done when turntable photos dropped on the page give the same OBJ as the desktop app.</span></div>
+    <div class="card"><span class="k ok">Stage 6 · built</span><span class="t">Browser version and home page</span><span>Silhouette engine in JavaScript in a Web Worker, nothing uploaded; root index.html with Try it, Install, Capture guide, Design; ready for GitHub Pages.</span><span class="done">Done: synthetic turntable photos give the same size as the desktop app (within 0.1%).</span></div>
   </div>
 </section>
 
@@ -286,7 +288,7 @@ footer { margin-top: 80px; padding-top: 18px; border-top: 1px solid var(--rule);
       <tr><th>Runs as</th><td>Python, in-process</td><td>PyTorch, in-process</td><td>Bundled bozzetto-capture</td><td>Downloaded programs</td></tr>
       <tr><th>Extra download</th><td>None</td><td>~1.7 GB weights + PyTorch</td><td>None</td><td>A few hundred MB</td></tr>
       <tr><th>Status</th><td>Built</td><td>Built</td><td>Stage 3</td><td>Stage 4</td></tr>
-      <tr><th>In the browser</th><td>Yes (stage 6)</td><td>Possible later (WebGPU, large download)</td><td>No</td><td>No</td></tr>
+      <tr><th>In the browser</th><td>Yes (built)</td><td>Possible later (WebGPU, large download)</td><td>No</td><td>No</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -570,11 +572,12 @@ REGISTRY = {e.id: e for e in (TripoSREngine, SilhouetteEngine, AppleEngine, Colm
     <li><b>Unit tests</b> (<code>tests/test_core.py</code>): every selector rule, overrides and fallbacks, export axis/scale/placement, inside-out meshes, largest piece, copy detection, video frames, settings round-trip.</li>
     <li><b>Synthetic scans</b> (<code>tests/test_silhouette.py</code>, <code>tests/synth.py</code>): turntable photos of a bottle and a box rendered with OpenCV’s own projection, scanned end to end. Bottle within 2% (measured under 1%), box within the documented bulge, clockwise turntables, closed mesh.</li>
     <li><b>TripoSR wrapper</b> (<code>tests/test_triposr.py</code>): photo preparation, a stand-in network, orientation, colours, export, and the install/download states. A real-model test runs automatically where PyTorch and the weights exist.</li>
+    <li><b>Browser engine</b> (<code>tests/test_web_parity.py</code>, <code>tests/web/run_core.mjs</code>): the same synthetic photos go through <code>web/js/core</code> in Node and through the desktop engine; sizes must agree within 1% (measured under 0.1%) and the mesh must be closed. Skipped when Node.js is not installed.</li>
     <li><b>Window</b>: every handler run against a mock Qt during development; to be covered by a pytest-qt test on a machine with PySide6.</li>
     <li><b>CI (stage 5)</b>: Windows, macOS and Ubuntu on every push.</li>
   </ul>
   <pre><code>pip install -e ".[dev]"
-pytest            # 21 passed, 1 skipped (real TripoSR model)</code></pre>
+pytest            # 24 passed, 1 skipped (real TripoSR model); browser tests need Node.js 18+</code></pre>
 </section>
 
 <div class="part">Interface</div>
@@ -652,8 +655,12 @@ pytest            # 21 passed, 1 skipped (real TripoSR model)</code></pre>
 │   ├── engines/        base · silhouette · triposr · later (Apple, COLMAP: planned) · tsr/ (vendored, MIT)
 │   ├── cli.py · __main__.py
 ├── macos/bozzetto-capture/   Swift helper for Apple Object Capture (stage 3)
-├── tests/                 test_core · test_silhouette · test_triposr · synth.py
+├── web/                   the browser version (GitHub Pages: /web/)
+│   ├── index.html · site.css · sample/perfume.glb
+│   └── js/                app · worker · viewer · video · core/ (image, masks, inputs, silhouette, volume, meshops, export, pipeline)
+├── tests/                 test_core · test_silhouette · test_triposr · test_web_parity · synth.py · web/
 ├── docs/                  capture.html · design.html (this page) · src/ (builds this page)
+├── index.html             home page
 ├── pyproject.toml         extras: [triposr], [dev]
 ├── LICENSE                GPL-3.0
 ├── THIRD_PARTY_NOTICES.md
@@ -681,18 +688,58 @@ bozzetto-cli photos/ out/ --height-mm 82</code></pre>
   <div class="note warn"><b>Open decision</b><p>Code-signing for Windows and notarisation for Mac cost money (Apple: US$99 a year). Without them, SmartScreen and Gatekeeper warn on first launch.</p></div>
 </section>
 
-<section id="browser" class="prose">
+<section id="browser">
   <h2><span class="num">26</span>Browser version and home page (stage 6)</h2>
-  <p>The repository’s root page (<code>index.html</code>, published with GitHub Pages) becomes the project’s home: <b>Try it in the browser</b>, <b>Download</b> (the three stage-5 builds), <b>Capture guide</b> and <b>Software design</b>.</p>
+  <div class="prose">
+  <p>The repository’s root page, <code>index.html</code>, is the project’s home: what a bozzetto is, a scanned model to turn, how the browser and desktop versions differ, how to install, and links to the capture guide and this page. <code>web/</code> is the browser version. Both are static files, so GitHub Pages can publish the repository as it is (Settings › Pages › Deploy from branch <code>main</code>, folder <code>/</code>).</p>
+  <p>The browser version runs the turntable silhouette engine in JavaScript on the visitor’s computer. Nothing is uploaded, nothing is installed, and there are no third-party libraries: the core is a line-by-line port of the Python engine using typed arrays.</p>
+  </div>
+  <figure><div class="frame">{{web}}</div><figcaption>The page collects the input (and pulls frames from a video), a Web Worker runs the same steps as the desktop engine, and the result comes back for the preview and the downloads.</figcaption></figure>
+  <div class="prose">
+  <h3>Modules</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>File</th><th>Ports</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>core/image.js</code></td><td>OpenCV calls in <code>masks.py</code></td><td>5×5 Gaussian blur, 8-bit Lab, Otsu, elliptical erode/dilate (identical to OpenCV), largest blob, hole fill, area resize, sharpness</td></tr>
+      <tr><td><code>core/masks.js</code></td><td><code>core/masks.py</code></td><td>Cut-out from the border colour</td></tr>
+      <tr><td><code>core/inputs.js</code></td><td><code>core/inputs.py</code></td><td>Exact copies (SHA-256), EXIF focal length (own JPEG reader), turntable score, file-name order</td></tr>
+      <tr><td><code>core/silhouette.js</code></td><td><code>engines/silhouette.py</code></td><td>Camera, bounding box, carving, base-wedge trim</td></tr>
+      <tr><td><code>core/volume.js</code></td><td>SciPy, scikit-image</td><td>Gaussian σ 0.8 (scipy rules) and marching cubes; the 256-case table is generated at load time by linking crossing edges face by face, cutting off each inside corner on two-corner faces, so neighbouring cells always agree and the surface is closed</td></tr>
+      <tr><td><code>core/meshops.js</code>, <code>core/export.js</code></td><td><code>core/meshops.py</code>, <code>core/export.py</code></td><td>Largest piece, outward faces, Taubin ×4, mm / Y up / base 0, OBJ text, GLB bytes</td></tr>
+      <tr><td><code>core/pipeline.js</code></td><td><code>core/pipeline.py</code></td><td>Order, checks, warnings; image decoding is passed in, so Node can run it for tests</td></tr>
+      <tr><td><code>worker.js</code></td><td>–</td><td>Decodes photos with <code>createImageBitmap</code> and <code>OffscreenCanvas</code> (≤ 1200 px, EXIF rotation applied), runs the pipeline, posts progress and the result</td></tr>
+      <tr><td><code>video.js</code></td><td><code>extract_frames</code></td><td>On the page: seeks a <code>&lt;video&gt;</code>, keeps the sharpest of three frames around each point in time</td></tr>
+      <tr><td><code>viewer.js</code></td><td><code>app/preview.py</code></td><td>WebGL preview, clay shading; drag, pinch, wheel, arrow keys. Also turns the sample model on the home page</td></tr>
+      <tr><td><code>app.js</code></td><td><code>app/main_window.py</code></td><td>Drop zone, folder and video pickers, settings (remembered in the browser), cancel, warnings and errors, downloads</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Messages between the page and the worker</h3>
+<pre><code>page → worker  { type: "run", files: [{ name, buffer }] | frames: [{ name, width, height, data }],
+                 settings: { heightMm, tiltDeg, clockwise, preset }, name }
+worker → page  { type: "progress", stage, fraction | null, message? }
+               { type: "done", vertices, normals, faces, sizeMm, scaledToHeight, obj, glb, info }
+               { type: "failed", code, message, detail }</code></pre>
+  <p>Buffers are transferred, not copied. Cancel ends the worker; a new one starts with the next build.</p>
+  <h3>Measured against the desktop app</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Synthetic scan, 24 photos</th><th>Desktop</th><th>Browser</th></tr></thead>
+    <tbody>
+      <tr><td>Bottle, true 440 × 800 × 440 mm</td><td>437.1 × 800 × 437.0 mm, 60,304 triangles</td><td>437.1 × 800 × 437.0 mm, 60,312 triangles</td></tr>
+      <tr><td>Box, true 600 × 900 × 300 mm</td><td>600.8 × 900 × 349.0 mm</td><td>600.4 × 900 × 349.6 mm</td></tr>
+      <tr><td>Time (Quick)</td><td>about 1.5 s</td><td>about 8 s (Chromium and Node, one core)</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Limits</h3>
   <ul>
-    <li><b>Engine</b>: the turntable silhouette engine ported to JavaScript (with OpenCV.js or plain typed arrays and a small marching-cubes routine), running entirely on the visitor’s computer. Nothing is uploaded.</li>
-    <li><b>Same output</b>: identical cut-out, camera model, base-wedge trim and export rules (mm, Y up, base at 0), so a browser OBJ matches the desktop one. A shared set of synthetic photos checks both.</li>
-    <li><b>Later</b>: TripoSR in the browser through ONNX Runtime Web on WebGPU, as an optional heavy mode (about 1.7 GB download per visitor).</li>
-    <li><b>Not in the browser</b>: Apple Object Capture and COLMAP + OpenMVS stay desktop-only.</li>
+    <li>Turntable silhouette only: at least 6 photos of one full turn. One-photo TripoSR stays in the desktop app for now; in the browser it would need ONNX Runtime Web on WebGPU and a 1.7 GB download per visitor.</li>
+    <li>HEIC photos open only in Safari; other browsers need JPEG, PNG or WebP. Video needs a format the browser plays (MP4 H.264 or WebM).</li>
+    <li>Browsers don’t run the page from a file opened directly (<code>file://</code>); serve the folder (<code>python -m http.server</code>) or use GitHub Pages.</li>
+    <li>Apple Object Capture and COLMAP + OpenMVS stay desktop-only.</li>
   </ul>
+  </div>
 </section>
 
-<footer>Bozzetto · GPL-3.0-or-later · See also the <a href="capture.html">capture guide</a>.</footer>
+<footer>Bozzetto · GPL-3.0-or-later · <a href="../">Home</a> · <a href="../web/">Try it in the browser</a> · <a href="capture.html">Capture guide</a></footer>
 </main>
 </div>
 <button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch between light and dark theme">Theme</button>

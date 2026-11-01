@@ -67,6 +67,17 @@ Optional, for the TripoSR engine (`pip install "bozzetto[triposr]"`):
 | einops | MIT | https://github.com/arogozhnikov/einops |
 | huggingface_hub | Apache-2.0 | https://github.com/huggingface/huggingface_hub |
 
+## Browser version (`web/`) and the web pages
+
+The browser engine is Bozzetto's own code (a port of its Python engine) and includes no third-party
+code. The pages load one third-party resource:
+
+| Component | Licence | Source |
+|---|---|---|
+| IBM Plex Sans and IBM Plex Sans Condensed fonts, served by Google Fonts | SIL Open Font License 1.1 | https://github.com/IBM/plex |
+
+The pages work without them (system fonts are used instead).
+
 ## Used through the operating system
 
 - **Apple Object Capture** (RealityKit `PhotogrammetrySession`), part of macOS, used by the

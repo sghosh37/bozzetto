@@ -349,6 +349,26 @@ def downloads():
     return d.svg(820)
 
 
+def web():
+    d = D(1000, 380, "Browser version: the page reads files or video frames, a Web Worker runs the ported core, "
+                     "and the page shows the model and offers OBJ and GLB downloads.", "web")
+    d.band(20, 20, 300, 340, "page · app.js")
+    d.box(36, 52, 268, 74, "Input", ["drop, photos, folder, video", "settings (remembered)"])
+    d.box(36, 140, 268, 74, "video.js", ["seek, sharpest of 3 per slot,", "≤ 1200 px frames"])
+    d.box(36, 228, 268, 116, "Result", ["viewer.js: WebGL preview", "size, triangles, time", "Download OBJ / GLB"], kind="ok")
+    d.band(360, 20, 620, 340, "worker.js · Web Worker")
+    d.box(376, 52, 280, 74, "decode", ["createImageBitmap → OffscreenCanvas", "≤ 1200 px, RGBA"])
+    d.box(376, 140, 280, 74, "inputs.js", ["copies (SHA-256), EXIF focal,", "turntable score"])
+    d.box(376, 228, 280, 116, "pipeline.js", ["silhouette.js: cut-out, camera, carve,", "trim; volume.js: Gaussian, marching", "cubes; export.js: mm, Y up, OBJ, GLB"], kind="key")
+    d.box(680, 52, 284, 292, "Same rules as the desktop", ["masks.py → masks.js, image.js", "silhouette.py → silhouette.js", "meshops.py → meshops.js", "export.py → export.js", "", "tests/test_web_parity.py runs both", "on the same synthetic photos and", "compares the models.", "", "No third-party code; nothing", "leaves the computer."], kind="band")
+    d.arrow([(304, 89), (374, 89)], "files", 339, 82)
+    d.arrow([(304, 177), (374, 260)], "frames", 312, 214)
+    d.arrow([(516, 126), (516, 138)])
+    d.arrow([(516, 214), (516, 226)])
+    d.arrow([(376, 300), (306, 300)], "done", 341, 293)
+    return d.svg(760)
+
+
 def triposr():
     d = D(1000, 256, "TripoSR pipeline: pick the sharpest clean photo, cut out and centre it on a grey square, run "
                      "the model, extract the surface with marching cubes, turn it Y-up, colour vertices.", "tri")
@@ -371,5 +391,5 @@ def triposr():
 ALL = {
     "architecture": architecture, "modules": modules, "datamodel": data_model, "sequence": sequence,
     "states": states, "threading": threading, "selection": selection, "silhouette": silhouette,
-    "apple": apple_protocol, "triposr": triposr, "colmap": colmap, "downloads": downloads,
+    "apple": apple_protocol, "triposr": triposr, "colmap": colmap, "downloads": downloads, "web": web,
 }

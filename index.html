@@ -1,0 +1,210 @@
+<!doctype html>
+<!-- Bozzetto: photos to a rough 3D shape for sculpting
+     Copyright (C) 2026 Suman Ghosh
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bozzetto</title>
+<meta name="description" content="Bozzetto turns photos or a short video of a real object into a rough 3D model (OBJ, in millimetres) to refine in Blender. Free software for Windows, Linux, macOS and the browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="web/site.css">
+<style>
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 24px 48px; align-items: center; padding-block: 48px 40px; }
+@media (max-width: 860px) { .hero { grid-template-columns: minmax(0, 1fr); padding-block: 28px 24px; } }
+.entry h1 { font-size: clamp(64px, 13vw, 148px); line-height: .86; letter-spacing: -.02em; margin: 0 0 18px; }
+.entry .say { font-size: 18px; color: var(--ink-2); margin: 0 0 18px; }
+.entry .say i { font-style: italic; }
+.entry .sense { font-size: 21px; line-height: 1.45; margin: 0 0 14px; max-width: 34ch; border-left: 3px solid var(--clay); padding-left: 16px; }
+.entry .ours { font-size: 18px; margin: 0 0 26px; max-width: 42ch; }
+.cta { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.stand { position: relative; aspect-ratio: 1 / 1.05; max-height: 72vh; width: 100%; margin-inline: auto;
+  background: radial-gradient(ellipse 60% 18% at 50% 88%, var(--sunk) 0, transparent 70%); }
+.stand canvas { position: absolute; inset: 0; }
+.stand figcaption { position: absolute; left: 0; right: 0; bottom: -6px; text-align: center; font-size: 14px; color: var(--ink-2); }
+.stand .nogl { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-2); text-align: center; padding: 20px; }
+
+section.block { padding-block: 44px; border-top: 1px solid var(--rule); }
+section.block h2 { font-size: 32px; margin-bottom: 18px; }
+.lead { font-size: 18px; max-width: 64ch; color: var(--ink-2); margin-bottom: 22px; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; counter-reset: s; }
+@media (max-width: 760px) { .steps { grid-template-columns: minmax(0, 1fr); gap: 18px; } }
+.steps li { counter-increment: s; }
+.steps li::before { content: counter(s); display: block; font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 1; color: var(--clay); margin-bottom: 8px; }
+.steps h3 { font-size: 21px; margin-bottom: 6px; }
+.steps p { color: var(--ink-2); margin: 0; max-width: 36ch; }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; line-height: 1.5; min-width: 560px; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--rule); }
+tr:last-child td, tr:last-child th { border-bottom: 0; }
+thead th { font-size: 15px; background: var(--sunk); }
+tbody th { font-weight: 600; width: 22%; }
+.soon { color: var(--ink-2); }
+
+.engines { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.engine { padding: 16px 18px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); margin: 0 -1px -1px 0; }
+.engine h3 { font-size: 19px; margin-bottom: 4px; }
+.engine p { margin: 0 0 8px; font-size: 15px; color: var(--ink-2); }
+.engine .state { font-size: 14px; font-weight: 600; color: var(--accent); }
+.engine .state.later { color: var(--ink-2); font-weight: 500; }
+
+pre.cmd { background: var(--sunk); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 14px; line-height: 1.65; margin: 0 0 14px; }
+pre.cmd code { background: none; padding: 0; overflow-wrap: normal; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+@media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+
+.docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.doc { display: block; padding: 16px 18px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); color: var(--ink); text-decoration: none; }
+.doc:hover { border-color: var(--accent); color: var(--ink); }
+.doc b { display: block; font-family: var(--display); font-size: 20px; margin-bottom: 4px; }
+.doc span { color: var(--ink-2); font-size: 15px; }
+
+footer { border-top: 1px solid var(--rule); padding-block: 22px 60px; font-size: 14px; color: var(--ink-2); }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./" aria-current="page">Bozzetto</a>
+  <nav aria-label="Site">
+    <a href="web/">Try it in your browser</a>
+    <a href="#install">Install</a>
+    <a href="docs/capture.html">How to take the photos</a>
+    <a href="docs/design.html">Software design</a>
+    <a href="https://github.com/sghosh37/3d-scan">Source code</a>
+  </nav>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div class="entry">
+      <h1>bozzetto</h1>
+      <p class="say"><i>bot-SET-toh</i>, noun, Italian. Plural <i>bozzetti</i>, from <i>bozza</i>, a rough draft.</p>
+      <p class="sense">The small, rough model a sculptor shapes in clay or wax to settle the form before the real work.</p>
+      <p class="ours">This Bozzetto makes one from photos of a real object: a closed 3D mesh at real size, ready to refine and finish in Blender.</p>
+      <div class="cta">
+        <a class="btn primary" href="web/">Try it in your browser</a>
+        <a class="btn" href="#install">Install the desktop app</a>
+      </div>
+    </div>
+    <figure class="stand" style="margin:0">
+      <canvas class="mesh" id="hero" tabindex="0" aria-label="A perfume bottle scanned by Bozzetto. Drag or use the arrow keys to turn it."></canvas>
+      <figcaption>A perfume bottle carved from 36 turntable photos. Drag to turn it.</figcaption>
+    </figure>
+  </div>
+
+  <section class="block" aria-labelledby="how">
+    <div class="wrap">
+      <h2 id="how">From photos to Blender</h2>
+      <ol class="steps">
+        <li><h3>Photograph the object</h3><p>A full turn on a turntable against a plain backdrop, a slow video circling it, or, with the desktop app, a single photo.</p></li>
+        <li><h3>Build the shape</h3><p>Bozzetto picks a scanning method for your photos and your computer, and builds the mesh right there. Nothing is uploaded.</p></li>
+        <li><h3>Refine it in Blender</h3><p>Open the OBJ: it is in millimetres, Y up, with the base at zero. Sculpt, fix and detail from there.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="where">
+    <div class="wrap">
+      <h2 id="where">In the browser or on your computer</h2>
+      <p class="lead">The browser version needs nothing installed and handles turntable shoots. The desktop app adds the methods that need more computing power.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">In the browser</th><th scope="col">Desktop app (Windows, Linux, macOS)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Photos</th><td>6 or more turntable photos, or a video</td><td>From 1 photo; turntable shoots; 20 or more from all round (coming)</td></tr>
+            <tr><th scope="row">Methods</th><td>Turntable silhouette</td><td>TripoSR, turntable silhouette. <span class="soon">Apple Object Capture and COLMAP + OpenMVS coming.</span></td></tr>
+            <tr><th scope="row">Install</th><td>Nothing</td><td>Python 3.10 or newer, then one command. <span class="soon">Ready-made installers coming.</span></td></tr>
+            <tr><th scope="row">Output</th><td colspan="2">OBJ or GLB, in millimetres, Y up, base at zero, closed mesh</td></tr>
+            <tr><th scope="row">Privacy</th><td colspan="2">Your photos never leave your computer</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="methods">
+    <div class="wrap">
+      <h2 id="methods">Scanning methods</h2>
+      <p class="lead">Each suits a different kind of shoot. The app chooses one for you and lets you pick another.</p>
+      <div class="engines">
+        <div class="engine"><h3>Turntable silhouette</h3><p>Carves away everything outside the object’s outline in each photo of a full turn. Fast and dependable; hollows and dents are filled in.</p><span class="state">Browser and desktop</span></div>
+        <div class="engine"><h3>TripoSR</h3><p>An AI model that builds a whole shape from one photo, guessing the sides it can’t see. Downloads about 1.7 GB once.</p><span class="state">Desktop</span></div>
+        <div class="engine"><h3>Apple Object Capture</h3><p>Apple’s photogrammetry on a Mac, from 20 or more photos all round. Detailed, with colour.</p><span class="state later">Coming next (Mac)</span></div>
+        <div class="engine"><h3>COLMAP + OpenMVS</h3><p>Open-source photogrammetry on any computer, best with an NVIDIA graphics card.</p><span class="state later">Coming later</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="install" aria-labelledby="installh">
+    <div class="wrap cols">
+      <div>
+        <h2 id="installh">Install the desktop app</h2>
+        <p>Until the installers are ready, install from the source code. You need Python 3.10 or newer.</p>
+<pre class="cmd"><code>git clone https://github.com/sghosh37/3d-scan.git
+cd 3d-scan
+python -m venv .venv
+.venv\Scripts\activate          # macOS or Linux: source .venv/bin/activate
+pip install -e .                # the app and the silhouette method
+pip install -e ".[triposr]"     # optional: the one-photo method
+bozzetto                        # opens the window</code></pre>
+      </div>
+      <div>
+        <h2>Run it on your own computer</h2>
+        <p>The browser version also works offline from a copy of the code. Browsers only run it from a web address, so start a small local server in the folder:</p>
+<pre class="cmd"><code>cd 3d-scan
+python -m http.server 8000
+# then open http://localhost:8000/web/</code></pre>
+        <p>The command line is <code>bozzetto-cli photos/ out/ --height-mm 82</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="docs">
+    <div class="wrap">
+      <h2 id="docs">Guides and reference</h2>
+      <div class="docs">
+        <a class="doc" href="docs/capture.html"><b>How to take the photos</b><span>Lighting, backdrop, turntable steps, video, and how many photos each method needs.</span></a>
+        <a class="doc" href="docs/design.html"><b>Software design</b><span>How Bozzetto is built: architecture, engines, data structures and flows, with diagrams.</span></a>
+        <a class="doc" href="https://github.com/sghosh37/3d-scan"><b>Source code</b><span>The repository on GitHub, with the README and the tests.</span></a>
+        <a class="doc" href="https://github.com/sghosh37/3d-scan/blob/main/THIRD_PARTY_NOTICES.md"><b>Credits and licences</b><span>The open-source work Bozzetto builds on, and its licences.</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">Bozzetto is free software under the GNU General Public License, version 3 or later. © 2026 Suman Ghosh.</div>
+</footer>
+<button class="theme-toggle" type="button" id="themeToggle" aria-label="Switch between light and dark theme">Theme</button>
+<script type="module">
+import { MeshViewer } from './web/js/viewer.js';
+const root = document.documentElement;
+try { const t = localStorage.getItem('bozzetto.theme'); if (t) root.dataset.theme = JSON.parse(t); } catch {}
+let viewer = null;
+document.getElementById('themeToggle').addEventListener('click', () => {
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('bozzetto.theme', JSON.stringify(root.dataset.theme)); } catch {}
+  viewer?.draw();
+});
+try {
+  viewer = new MeshViewer(document.getElementById('hero'), { spin: true });
+  viewer.zoom = 1.15;
+  await viewer.loadGlb('web/sample/perfume.glb');
+} catch (e) {
+  const c = document.getElementById('hero');
+  const p = document.createElement('div'); p.className = 'nogl';
+  p.textContent = 'The 3D model can’t be shown in this browser.';
+  c.replaceWith(p);
+}
+</script>
+</body>
+</html>
