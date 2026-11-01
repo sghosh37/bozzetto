@@ -1,8 +1,20 @@
 # Bozzetto
 
-**Photos to a rough 3D shape for sculpting.** A *bozzetto* is a sculptor’s quick preliminary model.
-Bozzetto turns product photos, or a short video circling the product, into a closed OBJ mesh,
-in millimetres, Y up, base at 0, that you refine in Blender.
+## What the name means
+
+A **bozzetto** (Italian, pronounced *bot-SET-toh*; plural *bozzetti*) is the small, rough model a
+sculptor shapes in clay or wax before the real work. The word comes from *bozza*, “rough draft”.
+A bozzetto isn’t meant to be finished or exact. It fixes the overall form, proportions and pose
+quickly, so the artist can judge the idea and then refine it at full size. Michelangelo and Bernini
+both made them.
+
+That is what this software makes: a quick first shape of a real object, built from a few photos,
+for you to refine and finish in Blender.
+
+## What it does
+
+**Photos to a rough 3D shape for sculpting.** Bozzetto turns product photos, or a short video
+circling the product, into a closed OBJ mesh, in millimetres, Y up, base at 0, that you refine in Blender.
 
 It runs on **Windows, Linux and macOS** and picks a scanning engine for your photos and your computer:
 
