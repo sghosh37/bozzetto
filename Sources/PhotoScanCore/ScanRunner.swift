@@ -57,7 +57,7 @@ public enum ScanError: LocalizedError {
     case tooFewPhotos(Int)
     case copiesOnly(total: Int, unique: Int)
     case buildFailed(photos: Int, detail: String)
-    case noModel
+    case noModel(String)
 
     public var errorDescription: String? {
         switch self {
@@ -79,8 +79,8 @@ public enum ScanError: LocalizedError {
                 why += " Usually the photos don’t overlap enough, are blurred, or the object has strong reflections or no surface texture. Check the photos, try “Plain or low-texture product”, or reshoot with polarised light."
             }
             return why + "\n(Technical detail: \(detail))"
-        case .noModel:
-            return "Object Capture finished but no model file was written."
+        case .noModel(let path):
+            return "Object Capture finished but no model file was written (expected \(path)). Usually it could not find enough matching points between the photos; try more photos from new angles, or a video."
         }
     }
 }
@@ -168,11 +168,11 @@ public enum ScanRunner {
         SessionKeeper.shared.keep(session)
         defer { SessionKeeper.shared.releaseLater(session) }
 
-        // Errors are remembered, not thrown mid-stream, so the output stream is always read to its end.
+        // Errors are remembered, not thrown mid-stream, so the stream is read until Object Capture says it is done.
         var failure: Error? = nil
         await withTaskCancellationHandler {
             do {
-                for try await output in session.outputs {
+                stream: for try await output in session.outputs {
                     switch output {
                     case .inputComplete:
                         onEvent(.stage("Photos read. Building the model…"))
@@ -191,8 +191,13 @@ public enum ScanRunner {
                         onEvent(.message("Photos were scaled down automatically to fit in memory."))
                     case .processingCancelled:
                         if failure == nil { failure = CancellationError() }
+                        break stream
+                    case .processingComplete:
+                        // The stream does not end by itself after this, so stop reading here.
+                        // The session stays alive in SessionKeeper and is released safely later.
+                        break stream
                     default:
-                        break     // processingComplete ends the stream on its own
+                        break
                     }
                 }
             } catch {
@@ -203,6 +208,6 @@ public enum ScanRunner {
         }
 
         if let failure { throw failure }
-        guard FileManager.default.fileExists(atPath: usdzURL.path) else { throw ScanError.noModel }
+        guard FileManager.default.fileExists(atPath: usdzURL.path) else { throw ScanError.noModel(usdzURL.path) }
     }
 }
