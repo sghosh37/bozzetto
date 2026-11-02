@@ -278,12 +278,17 @@ async function build() {
     showResult(result, name);
   } catch (err) {
     if (cancelledFlag) return;
-    const m = err.userMessage || err.message || String(err);
+    const m = (err && (err.userMessage || err.message)) || String(err ?? '');
     const lines = [];
     if (err.code === 'NO_MODEL' && resolvedMethod() === 'silhouette') lines.push('Check the turntable direction and the camera tilt, and that the photos are in turning order.');
     if (err.code === 'NO_OUTLINE') lines.push('Shoot against a plain backdrop whose colour differs from the product.');
-    message('bad', m, lines, err.detail || '');
-    $('stage').textContent = 'Stopped.';
+    message('bad', m || 'The build stopped without saying why.', lines, err.detail || '');
+    $('stage').textContent = 'Stopped. See the message below.';
+    $('bar').classList.remove('busy');
+    $('bar').firstElementChild.style.width = '0%';
+    $('messages').lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // a failed worker may be in a bad state (e.g. a lost graphics device): start a fresh one next time
+    stopWorker();
   } finally {
     setRunning(false);
     showMethod();

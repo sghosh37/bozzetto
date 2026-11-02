@@ -180,7 +180,7 @@ footer { margin-top: 80px; padding-top: 18px; border-top: 1px solid var(--rule);
 </nav>
 <main>
 <header class="mast">
-  <div class="eyebrow">sghosh37/3d-scan · software design · v0.2 (stages 1–2 built)</div>
+  <div class="eyebrow">sghosh37/bozzetto · software design · v0.2 (stages 1–2 built)</div>
   <h1>Bozzetto software design</h1>
   <p class="lede">Bozzetto (a sculptor’s quick preliminary model) is a free desktop app for Windows, Linux and Mac that turns product photos or a short video into a rough, closed 3D shape for Blender, choosing the best scanning engine for the photos and the computer.</p>
   <div class="meta"><span>GPL-3.0-or-later</span><span>Python 3.10+ · PySide6</span><span>Engines: silhouette · TripoSR · Apple Object Capture · COLMAP + OpenMVS</span></div>
@@ -221,7 +221,7 @@ footer { margin-top: 80px; padding-top: 18px; border-top: 1px solid var(--rule);
       <tr><td>bozzetto-cli</td><td>Built</td><td>Used for the synthetic scans</td></tr>
       <tr><td>Apple Object Capture engine</td><td>Planned (stage 3)</td><td>Swift helper moved to <code>macos/bozzetto-capture</code>; needs <code>--json</code> and the session-release fix</td></tr>
       <tr><td>Browser version (<code>web/</code>)</td><td>Built (stage 6)</td><td>Same synthetic scans run through the browser engine in Node: size matches the desktop app within 0.1% and the triangle count within 0.1%; cut-outs differ on under 0.02% of pixels; morphology identical to OpenCV. Run end to end in Chromium with photos and with a video</td></tr>
-      <tr><td>TripoSR in the browser</td><td>Built</td><td>Photo preparation matches the desktop engine (mean difference under 0.002); triplane sampling matches PyTorch’s <code>grid_sample</code> to 1e-4; whole one-photo pipeline with stand-in networks (orientation, size, colours, closed mesh); page flow in Chromium with a stand-in ONNX Runtime (asking before the download, failed download message, cached model, model kept loaded between builds). The real model first runs in your browser</td></tr>
+      <tr><td>TripoSR in the browser</td><td>Built</td><td>Photo preparation matches the desktop engine (mean difference under 0.002); triplane sampling matches PyTorch’s <code>grid_sample</code> to 1e-4; whole one-photo pipeline with stand-in networks (orientation, size, colours, closed mesh); page flow in Chromium with a stand-in ONNX Runtime (asking before the download, failed download message, cached model, model kept loaded between builds). Real model checked in Chrome 152 on Windows with an AMD graphics card (WebGPU): download, checksum, start, and a one-photo build at 128³ in about 45 s, standing upright with the photo’s proportions</td></tr>
       <tr><td>Home page (<code>index.html</code>)</td><td>Built (stage 6)</td><td>Checked in Chromium at desktop and phone widths, light and dark</td></tr>
       <tr><td>COLMAP + OpenMVS, packaging</td><td>Planned (stages 4–5)</td><td>–</td></tr>
     </tbody>
@@ -650,7 +650,7 @@ pytest            # 28 passed, 1 skipped (real TripoSR model); browser tests nee
 <div class="part">Delivery</div>
 <section id="repository" class="prose">
   <h2><span class="num">24</span>Repository</h2>
-<pre><code>3d-scan/
+<pre><code>bozzetto/
 ├── bozzetto/
 │   ├── app/            main_window.py · worker.py · preview.py
 │   ├── core/           models · inputs · masks · hardware · select · pipeline · export · meshops · downloads · settings
@@ -695,7 +695,7 @@ bozzetto-cli photos/ out/ --height-mm 82</code></pre>
   <div class="prose">
   <p>The repository’s root page, <code>index.html</code>, is the project’s home: what a bozzetto is, a scanned model to turn, how the browser and desktop versions differ, how to install, and links to the capture guide and this page. <code>web/</code> is the browser version. Both are static files, so GitHub Pages can publish the repository as it is (Settings › Pages › Deploy from branch <code>main</code>, folder <code>/</code>).</p>
   <p>The browser version runs two methods on the visitor’s computer: the turntable silhouette engine, a line-by-line JavaScript port of the Python engine with no third-party code, and TripoSR for a single photo. Automatic choice follows the desktop rules for these two: fewer than 6 photos use TripoSR, 6 or more use the turntable method; the visitor can pick either. Nothing is uploaded.</p>
-  <p>For TripoSR the browser runs a community ONNX export of the official weights (<code>cgb/triposr-onnx-webgpu</code>, pinned to revision <code>048725e</code>): one graph from the 512 × 512 photo to the triplane (the DINO encoder is inside, weights int8, 485 MB) and a 0.2 MB decoder from 120 features to density and colour. ONNX Runtime Web 1.22.0 runs both, on the graphics card through WebGPU or on the processor. Everything around the networks is Bozzetto’s own JavaScript, ported from the desktop engine and the vendored TripoSR code.</p>
+  <p>For TripoSR the browser runs a community ONNX export of the official weights (<code>cgb/triposr-onnx-webgpu</code>, pinned to revision <code>048725e</code>): one graph from the 512 × 512 photo to the triplane (the DINO encoder is inside, weights int8, 485 MB) and a 0.2 MB decoder from 120 features to density and colour. ONNX Runtime Web 1.30.0 runs both, on the graphics card through WebGPU, or on the processor when there is no WebGPU or the graphics card can’t start the model. (Version 1.22 can’t start this model’s 8-bit weights on WebGPU; 1.30 can.) Everything around the networks is Bozzetto’s own JavaScript, ported from the desktop engine and the vendored TripoSR code.</p>
   </div>
   <figure><div class="frame">{{web}}</div><figcaption>The page collects the input (and pulls frames from a video) and asks before the one-photo model is downloaded; a Web Worker runs the same steps as the desktop engines, and the result comes back for the preview and the downloads.</figcaption></figure>
   <div class="prose">

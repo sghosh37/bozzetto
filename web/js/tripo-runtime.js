@@ -19,7 +19,9 @@ export const MODEL_FILES = [
 export const MODEL_BYTES = MODEL_FILES.reduce((s, f) => s + f.size, 0);
 const CACHE_NAME = `bozzetto-triposr-${MODEL_REVISION.slice(0, 7)}`;
 
-export const ORT_VERSION = '1.22.0';
+// 1.22 cannot run this model's 8-bit weights on WebGPU (session creation fails); 1.30 can (checked in
+// Chrome 152 on an AMD GPU: the triplane graph and the decoder both start and run on WebGPU).
+export const ORT_VERSION = '1.30.0';
 const ORT_DIST = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`;
 const ORT_ENTRIES = ['ort.webgpu.bundle.min.mjs', 'ort.webgpu.min.mjs', 'ort.all.min.mjs'];
 
@@ -104,6 +106,19 @@ async function loadOrt() {
 
 let loaded = null;
 
+/** ONNX Runtime sometimes throws a bare number (a pointer to a native error) instead of an Error. */
+export function describe(e) {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'number') return `native error ${e}`;
+  return String(e);
+}
+
+function startError(e, earlier) {
+  return Object.assign(new Error('The TripoSR model couldn’t start in this browser. Close other tabs to free memory and try again; ' +
+                                 'it works best in an up-to-date Chrome or Edge.'),
+                       { code: 'ENGINE_CRASHED', detail: (earlier ? `On the graphics card: ${describe(earlier)}\n` : '') + `Start: ${describe(e)}` });
+}
+
 /**
  * Download (first time), then start both networks. progress(stage, fraction, message).
  * @returns {Promise<{device:string, triplane:(img:Float32Array)=>Promise<Float32Array>, decode:(f:Float32Array,n:number)=>Promise<{density:Float32Array,color:Float32Array}>}>}
@@ -125,18 +140,24 @@ export async function loadTripo(progress = () => {}) {
 
   let gpu = false;
   try { gpu = !!(navigator.gpu && await navigator.gpu.requestAdapter()); } catch { gpu = false; }
-  const eps = gpu ? ['webgpu', 'wasm'] : ['wasm'];
-  progress('Starting the TripoSR model', null, gpu ? 'Running on the graphics card (WebGPU)' : 'No WebGPU in this browser: running on the processor, which is slower');
-  let triplaneSession, decoderSession;
-  try {
-    triplaneSession = await ort.InferenceSession.create(bytes[0], {
+  progress('Starting the TripoSR model', null, gpu ? 'Starting on the graphics card (WebGPU)' : 'No WebGPU in this browser: running on the processor, which is slower');
+  const start = async (eps) => {
+    const t = await ort.InferenceSession.create(bytes[0], {
       executionProviders: eps, graphOptimizationLevel: 'all',
       externalData: [{ path: MODEL_FILES[1].name, data: bytes[1] }],
     });
-    decoderSession = await ort.InferenceSession.create(bytes[2], { executionProviders: eps });
-  } catch (e) {
-    throw Object.assign(new Error('The TripoSR model couldn’t start in this browser. It needs about 1.5 GB of free memory; close other tabs or try Chrome or Edge.'),
-                        { code: 'ENGINE_CRASHED', detail: String(e && e.stack || e) });
+    const d = await ort.InferenceSession.create(bytes[2], { executionProviders: eps });
+    return [t, d];
+  };
+  let triplaneSession, decoderSession, device = gpu ? 'WebGPU' : 'CPU';
+  try {
+    [triplaneSession, decoderSession] = await start(gpu ? ['webgpu'] : ['wasm']);
+  } catch (first) {
+    if (!gpu) throw startError(first);
+    // the graphics card couldn't take the model: try the processor before giving up
+    progress('Starting the TripoSR model', null, `The graphics card couldn’t run the model (${describe(first)}); using the processor, which is slower`);
+    try { [triplaneSession, decoderSession] = await start(['wasm']); device = 'CPU'; }
+    catch (second) { throw startError(second, first); }
   }
   bytes.length = 0;     // let the downloaded copies go
 
@@ -146,7 +167,7 @@ export async function loadTripo(progress = () => {}) {
   const read = async (t) => (t.location && t.location !== 'cpu' ? await t.getData() : t.data);
 
   loaded = {
-    device: gpu ? 'WebGPU' : 'CPU',
+    device,
     async triplane(image) {
       const feeds = { [triplaneSession.inputNames[0]]: new ort.Tensor('float32', image, [1, 3, 512, 512]) };
       const out = await triplaneSession.run(feeds);

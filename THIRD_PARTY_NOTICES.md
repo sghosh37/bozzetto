@@ -75,7 +75,7 @@ the browser; the pages load these at run time:
 
 | Component | Licence | Source | When |
 |---|---|---|---|
-| ONNX Runtime Web 1.22.0 (Microsoft), from cdn.jsdelivr.net | MIT | https://github.com/microsoft/onnxruntime | One-photo method only |
+| ONNX Runtime Web 1.30.0 (Microsoft), from cdn.jsdelivr.net | MIT | https://github.com/microsoft/onnxruntime | One-photo method only |
 | TripoSR ONNX export, int8 (`cgb/triposr-onnx-webgpu`, revision `048725e`), from huggingface.co | MIT (TripoSR, Tripo AI & Stability AI); Apache-2.0 (DINO ViT-B/16 encoder inside, Meta) | https://huggingface.co/cgb/triposr-onnx-webgpu | One-photo method only, after the visitor agrees; checked against SHA-256 |
 | IBM Plex Sans and IBM Plex Sans Condensed fonts, served by Google Fonts | SIL Open Font License 1.1 | https://github.com/IBM/plex | Always (system fonts are used if they don't load) |
 

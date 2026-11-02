@@ -25,11 +25,29 @@ async function decode(buffer, name, maxWidth) {
   return { image: { width: w, height: h, data: id.data }, originalWidth };
 }
 
+let stageNow = '';
+
+/** Turn anything thrown (Errors, ONNX Runtime's bare numbers, strings) into a message for the page. */
+function failure(err, stage) {
+  const isObj = err !== null && typeof err === 'object';
+  const text = isObj ? (err.userMessage || err.message || '') : String(err);
+  const known = isObj && (err.userMessage || err.code);
+  return {
+    type: 'failed',
+    code: (isObj && err.code) || 'ENGINE_CRASHED',
+    message: known && text ? text : `Something went wrong${stage ? ` while ${stage.charAt(0).toLowerCase() + stage.slice(1)}` : ''}: ${text || 'no details'}`,
+    detail: [isObj && err.detail, isObj && err.stack, typeof err === 'number' ? `native error ${err}` : ''].filter(Boolean).join('\n'),
+  };
+}
+
+self.addEventListener('unhandledrejection', (e) => { e.preventDefault(); self.postMessage(failure(e.reason, stageNow)); });
+
 self.onmessage = async (e) => {
   const msg = e.data;
   if (msg.type !== 'run') return;
   let last = 0;
   const progress = (stage, fraction, message) => {
+    if (stage) stageNow = stage;
     const now = performance.now();
     if (message || fraction === 1 || now - last > 80) { last = now; self.postMessage({ type: 'progress', stage, fraction, message }); }
   };
@@ -43,8 +61,6 @@ self.onmessage = async (e) => {
     self.postMessage({ type: 'done', method: r.method, vertices: m.vertices, normals: m.normals, faces: m.faces,
                        colors: m.colors, sizeMm: m.sizeMm, scaledToHeight: m.scaledToHeight, obj, glb, info: r.info }, transfer);
   } catch (err) {
-    self.postMessage({ type: 'failed', code: err.code || 'ENGINE_CRASHED',
-                       message: err.userMessage || (err.code ? err.message : `Something went wrong: ${err.message}`),
-                       detail: err.detail || err.stack || '' });
+    self.postMessage(failure(err, stageNow));
   }
 };

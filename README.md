@@ -42,7 +42,7 @@ processor, which is much slower. It needs about 1.5 GB of free memory.
 
 Browsers only run it from a web address, not from a file opened directly. Either publish the
 repository with GitHub Pages (Settings › Pages › Deploy from branch `main`, folder `/`; it appears at
-`https://sghosh37.github.io/3d-scan/`), or serve a copy locally:
+`https://sghosh37.github.io/bozzetto/`), or serve a copy locally:
 
 ```
 python -m http.server 8000      # in the repository folder, then open http://localhost:8000/
@@ -53,8 +53,8 @@ python -m http.server 8000      # in the repository folder, then open http://loc
 Needs Python 3.10 or newer.
 
 ```
-git clone https://github.com/sghosh37/3d-scan.git
-cd 3d-scan
+git clone https://github.com/sghosh37/bozzetto.git
+cd bozzetto
 python -m venv .venv
 # Windows:  .venv\Scripts\activate        macOS/Linux:  source .venv/bin/activate
 pip install -e .                 # the app and the silhouette engine

@@ -78,7 +78,7 @@ footer { border-top: 1px solid var(--rule); padding-block: 22px 60px; font-size:
     <a href="#install">Install</a>
     <a href="docs/capture.html">How to take the photos</a>
     <a href="docs/design.html">Software design</a>
-    <a href="https://github.com/sghosh37/3d-scan">Source code</a>
+    <a href="https://github.com/sghosh37/bozzetto">Source code</a>
   </nav>
 </header>
 
@@ -148,8 +148,8 @@ footer { border-top: 1px solid var(--rule); padding-block: 22px 60px; font-size:
       <div>
         <h2 id="installh">Install the desktop app</h2>
         <p>Until the installers are ready, install from the source code. You need Python 3.10 or newer.</p>
-<pre class="cmd"><code>git clone https://github.com/sghosh37/3d-scan.git
-cd 3d-scan
+<pre class="cmd"><code>git clone https://github.com/sghosh37/bozzetto.git
+cd bozzetto
 python -m venv .venv
 .venv\Scripts\activate          # macOS or Linux: source .venv/bin/activate
 pip install -e .                # the app and the silhouette method
@@ -159,7 +159,7 @@ bozzetto                        # opens the window</code></pre>
       <div>
         <h2>Run it on your own computer</h2>
         <p>The browser version also works offline from a copy of the code. Browsers only run it from a web address, so start a small local server in the folder:</p>
-<pre class="cmd"><code>cd 3d-scan
+<pre class="cmd"><code>cd bozzetto
 python -m http.server 8000
 # then open http://localhost:8000/web/</code></pre>
         <p>The command line is <code>bozzetto-cli photos/ out/ --height-mm 82</code>.</p>
@@ -173,8 +173,8 @@ python -m http.server 8000
       <div class="docs">
         <a class="doc" href="docs/capture.html"><b>How to take the photos</b><span>Lighting, backdrop, turntable steps, video, and how many photos each method needs.</span></a>
         <a class="doc" href="docs/design.html"><b>Software design</b><span>How Bozzetto is built: architecture, engines, data structures and flows, with diagrams.</span></a>
-        <a class="doc" href="https://github.com/sghosh37/3d-scan"><b>Source code</b><span>The repository on GitHub, with the README and the tests.</span></a>
-        <a class="doc" href="https://github.com/sghosh37/3d-scan/blob/main/THIRD_PARTY_NOTICES.md"><b>Credits and licences</b><span>The open-source work Bozzetto builds on, and its licences.</span></a>
+        <a class="doc" href="https://github.com/sghosh37/bozzetto"><b>Source code</b><span>The repository on GitHub, with the README and the tests.</span></a>
+        <a class="doc" href="https://github.com/sghosh37/bozzetto/blob/main/THIRD_PARTY_NOTICES.md"><b>Credits and licences</b><span>The open-source work Bozzetto builds on, and its licences.</span></a>
       </div>
     </div>
   </section>
