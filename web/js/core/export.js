@@ -11,14 +11,14 @@ import { ScanError } from './errors.js';
 export const DEFAULT_HEIGHT_MM = 100;
 
 /**
- * @param {{vertices:Float64Array, faces:Uint32Array}} mesh  Y up, arbitrary units
+ * @param {{vertices:Float64Array, faces:Uint32Array, colors?:Uint8Array}} mesh  Y up, arbitrary units
  * @param {?number} heightMm
- * @returns {{vertices:Float32Array, faces:Uint32Array, normals:Float32Array, sizeMm:number[], scaledToHeight:boolean}}
+ * @returns {{vertices:Float32Array, faces:Uint32Array, normals:Float32Array, colors:?Uint8Array, sizeMm:number[], scaledToHeight:boolean}}
  */
 export function normalise(mesh, heightMm, smooth = 0) {
   if (!mesh.vertices.length || !mesh.faces.length) throw new ScanError('NO_MODEL', 'The engine produced an empty mesh.');
   let f = removeDegenerate(mesh.vertices, mesh.faces, 0);
-  const lc = largestComponent(mesh.vertices, f);
+  const lc = largestComponent(mesh.vertices, f, mesh.colors || null);
   let v = lc.vertices;
   f = orientOutward(v, lc.faces);
   if (smooth) v = taubin(v, f, smooth);
@@ -39,12 +39,12 @@ export function normalise(mesh, heightMm, smooth = 0) {
     out[i] = (v[i] - c[0]) * scale; out[i + 1] = (v[i + 1] - c[1]) * scale; out[i + 2] = (v[i + 2] - c[2]) * scale;
   }
   const sizeMm = [(maxX - minX) * scale, height * scale, (maxZ - minZ) * scale];
-  return { vertices: out, faces: f, normals: vertexNormals(out, f), sizeMm, scaledToHeight: scaled };
+  return { vertices: out, faces: f, normals: vertexNormals(out, f), colors: lc.colors, sizeMm, scaledToHeight: scaled };
 }
 
 /** OBJ text in the desktop app's layout (positions, normals, faces with normal indices). */
-export function objText(m, name, engineId = 'silhouette') {
-  const { vertices: v, faces: f, normals: n, sizeMm, scaledToHeight } = m;
+export function objText(m, name, engineId = 'silhouette') {  // vertex colours, when present, as `v x y z r g b`
+  const { vertices: v, faces: f, normals: n, colors: col, sizeMm, scaledToHeight } = m;
   const note = scaledToHeight ? 'scaled to the real height you entered'
                               : `no real height given: scaled to ${DEFAULT_HEIGHT_MM} mm high`;
   const lines = [
@@ -53,7 +53,11 @@ export function objText(m, name, engineId = 'silhouette') {
     `# vertices: ${v.length / 3}, triangles: ${f.length / 3}`, '# Y is up; the base of the object sits at y = 0',
     `o ${name}`,
   ];
-  for (let i = 0; i < v.length; i += 3) lines.push(`v ${v[i].toFixed(3)} ${v[i + 1].toFixed(3)} ${v[i + 2].toFixed(3)}`);
+  for (let i = 0; i < v.length; i += 3) {
+    let line = `v ${v[i].toFixed(3)} ${v[i + 1].toFixed(3)} ${v[i + 2].toFixed(3)}`;
+    if (col) line += ` ${(col[i] / 255).toFixed(4)} ${(col[i + 1] / 255).toFixed(4)} ${(col[i + 2] / 255).toFixed(4)}`;
+    lines.push(line);
+  }
   for (let i = 0; i < n.length; i += 3) lines.push(`vn ${n[i].toFixed(4)} ${n[i + 1].toFixed(4)} ${n[i + 2].toFixed(4)}`);
   for (let i = 0; i < f.length; i += 3) {
     const a = f[i] + 1, b = f[i + 1] + 1, c = f[i + 2] + 1;
@@ -66,7 +70,9 @@ export function objText(m, name, engineId = 'silhouette') {
 export function glbBuffer(m) {
   const pos = new Float32Array(m.vertices.length);
   for (let i = 0; i < pos.length; i++) pos[i] = m.vertices[i] / 1000;
-  const blobs = [new Uint8Array(pos.buffer), new Uint8Array(m.normals.buffer.slice(0)), new Uint8Array(Uint32Array.from(m.faces).buffer)];
+  const blobs = [new Uint8Array(pos.buffer), new Uint8Array(Float32Array.from(m.normals).buffer)];
+  if (m.colors) blobs.push(new Uint8Array(Float32Array.from(m.colors, (c) => c / 255).buffer));
+  blobs.push(new Uint8Array(Uint32Array.from(m.faces).buffer));
   const pad4 = (x) => (4 - (x % 4)) % 4;
   const views = [];
   let offset = 0;
@@ -78,12 +84,14 @@ export function glbBuffer(m) {
   for (let i = 0; i < pos.length; i += 3) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], pos[i + k]); max[k] = Math.max(max[k], pos[i + k]); }
   const gltf = {
     asset: { version: '2.0', generator: 'Bozzetto (browser)' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0 }],
-    meshes: [{ primitives: [{ attributes: { POSITION: 0, NORMAL: 1 }, indices: 2 }] }],
+    meshes: [{ primitives: [{ attributes: m.colors ? { POSITION: 0, NORMAL: 1, COLOR_0: 2 } : { POSITION: 0, NORMAL: 1 },
+                              indices: blobs.length - 1 }] }],
     buffers: [{ byteLength: offset }], bufferViews: views,
     accessors: [
       { bufferView: 0, componentType: 5126, count: pos.length / 3, type: 'VEC3', min, max },
       { bufferView: 1, componentType: 5126, count: pos.length / 3, type: 'VEC3' },
-      { bufferView: 2, componentType: 5125, count: m.faces.length, type: 'SCALAR' },
+      ...(m.colors ? [{ bufferView: 2, componentType: 5126, count: pos.length / 3, type: 'VEC3' }] : []),
+      { bufferView: blobs.length - 1, componentType: 5125, count: m.faces.length, type: 'SCALAR' },
     ],
   };
   let js = new TextEncoder().encode(JSON.stringify(gltf));

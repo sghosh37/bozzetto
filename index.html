@@ -104,7 +104,7 @@ footer { border-top: 1px solid var(--rule); padding-block: 22px 60px; font-size:
     <div class="wrap">
       <h2 id="how">From photos to Blender</h2>
       <ol class="steps">
-        <li><h3>Photograph the object</h3><p>A full turn on a turntable against a plain backdrop, a slow video circling it, or, with the desktop app, a single photo.</p></li>
+        <li><h3>Photograph the object</h3><p>A single clear photo, a full turn on a turntable against a plain backdrop, or a slow video circling it.</p></li>
         <li><h3>Build the shape</h3><p>Bozzetto picks a scanning method for your photos and your computer, and builds the mesh right there. Nothing is uploaded.</p></li>
         <li><h3>Refine it in Blender</h3><p>Open the OBJ: it is in millimetres, Y up, with the base at zero. Sculpt, fix and detail from there.</p></li>
       </ol>
@@ -114,14 +114,14 @@ footer { border-top: 1px solid var(--rule); padding-block: 22px 60px; font-size:
   <section class="block" aria-labelledby="where">
     <div class="wrap">
       <h2 id="where">In the browser or on your computer</h2>
-      <p class="lead">The browser version needs nothing installed and handles turntable shoots. The desktop app adds the methods that need more computing power.</p>
+      <p class="lead">The browser version needs nothing installed and handles a single photo or a turntable shoot. The desktop app adds the methods that need more computing power.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th scope="col"></th><th scope="col">In the browser</th><th scope="col">Desktop app (Windows, Linux, macOS)</th></tr></thead>
           <tbody>
-            <tr><th scope="row">Photos</th><td>6 or more turntable photos, or a video</td><td>From 1 photo; turntable shoots; 20 or more from all round (coming)</td></tr>
-            <tr><th scope="row">Methods</th><td>Turntable silhouette</td><td>TripoSR, turntable silhouette. <span class="soon">Apple Object Capture and COLMAP + OpenMVS coming.</span></td></tr>
-            <tr><th scope="row">Install</th><td>Nothing</td><td>Python 3.10 or newer, then one command. <span class="soon">Ready-made installers coming.</span></td></tr>
+            <tr><th scope="row">Photos</th><td>From 1 photo; 6 or more turntable photos, or a video</td><td>From 1 photo; turntable shoots; 20 or more from all round (coming)</td></tr>
+            <tr><th scope="row">Methods</th><td>TripoSR (compressed model, best with WebGPU in Chrome or Edge), turntable silhouette</td><td>TripoSR, turntable silhouette. <span class="soon">Apple Object Capture and COLMAP + OpenMVS coming.</span></td></tr>
+            <tr><th scope="row">Install</th><td>Nothing. The one-photo model downloads once (about 485 MB)</td><td>Python 3.10 or newer, then one command. <span class="soon">Ready-made installers coming.</span></td></tr>
             <tr><th scope="row">Output</th><td colspan="2">OBJ or GLB, in millimetres, Y up, base at zero, closed mesh</td></tr>
             <tr><th scope="row">Privacy</th><td colspan="2">Your photos never leave your computer</td></tr>
           </tbody>
@@ -136,7 +136,7 @@ footer { border-top: 1px solid var(--rule); padding-block: 22px 60px; font-size:
       <p class="lead">Each suits a different kind of shoot. The app chooses one for you and lets you pick another.</p>
       <div class="engines">
         <div class="engine"><h3>Turntable silhouette</h3><p>Carves away everything outside the object’s outline in each photo of a full turn. Fast and dependable; hollows and dents are filled in.</p><span class="state">Browser and desktop</span></div>
-        <div class="engine"><h3>TripoSR</h3><p>An AI model that builds a whole shape from one photo, guessing the sides it can’t see. Downloads about 1.7 GB once.</p><span class="state">Desktop</span></div>
+        <div class="engine"><h3>TripoSR</h3><p>An AI model that builds a whole shape from one photo, guessing the sides it can’t see. Downloads once: about 1.7 GB on the desktop, a 485 MB compressed copy in the browser.</p><span class="state">Browser and desktop</span></div>
         <div class="engine"><h3>Apple Object Capture</h3><p>Apple’s photogrammetry on a Mac, from 20 or more photos all round. Detailed, with colour.</p><span class="state later">Coming next (Mac)</span></div>
         <div class="engine"><h3>COLMAP + OpenMVS</h3><p>Open-source photogrammetry on any computer, best with an NVIDIA graphics card.</p><span class="state later">Coming later</span></div>
       </div>

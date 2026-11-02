@@ -21,7 +21,7 @@ install. It picks a scanning engine for your photos and your computer:
 
 | Engine | Photos | Status |
 |---|---|---|
-| **TripoSR**: AI shape from one photo (hidden sides guessed) | 1+ | ✅ stage 2 |
+| **TripoSR**: AI shape from one photo (hidden sides guessed) | 1+ | ✅ stage 2, and in the browser |
 | **Turntable silhouette**: carves the outline from every angle | 6–30 on a turntable | ✅ stage 1, and in the browser (stage 6) |
 | **Apple Object Capture**: photogrammetry built into macOS | 20+ | ⏳ stage 3 (Mac) |
 | **COLMAP + OpenMVS**: open-source photogrammetry | 20+ | ⏳ stage 4 |
@@ -31,8 +31,14 @@ Licence: **GPL-3.0-or-later**. Third-party parts and their licences: [`THIRD_PAR
 ## In the browser
 
 Open the home page, `index.html`, and choose **Try it in your browser** (the app is `web/`). Drop
-turntable photos, a folder or a video; the model is built on your computer and nothing is uploaded.
-It uses the turntable silhouette engine, so it needs at least 6 photos of a full turn.
+one photo, turntable photos, a folder or a video; the model is built on your computer and nothing is
+uploaded. Fewer than 6 photos use TripoSR (one photo); 6 or more of a full turn use the turntable
+silhouette engine, and you can choose either.
+
+The first one-photo build asks before downloading the TripoSR model, about 485 MB (an int8 ONNX
+export, pinned and checked against SHA-256), and keeps it in the browser. It runs on the graphics card
+with WebGPU (current Chrome and Edge; Safari and Firefox are catching up) and falls back to the
+processor, which is much slower. It needs about 1.5 GB of free memory.
 
 Browsers only run it from a web address, not from a file opened directly. Either publish the
 repository with GitHub Pages (Settings › Pages › Deploy from branch `main`, folder `/`; it appears at

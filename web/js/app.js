@@ -2,12 +2,14 @@
 // Copyright (C) 2026 Suman Ghosh
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The browser app page: collect photos or a video, run the scan in a worker, show and download it.
+// The browser app page: collect photos or a video, choose the method, run the scan in a worker,
+// show and download it.
 
 import { MeshViewer } from './viewer.js';
 import { extractFrames } from './video.js';
 import { byName, isPhotoName, isVideoName } from './core/inputs.js';
-import { MIN_PHOTOS } from './core/silhouette.js';
+import { chooseMethod } from './core/pipeline.js';
+import { forgetModel, MODEL_BYTES, MODEL_PAGE, modelCached } from './tripo-runtime.js';
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -42,6 +44,7 @@ catch (e) { $('empty').querySelector('div').textContent = 'This browser can’t 
 $('tilt').value = store.get('tilt', 20);
 document.querySelector(`input[name=dir][value=${store.get('clockwise', false) ? 'clock' : 'anti'}]`).checked = true;
 document.querySelector(`input[name=preset][value=${store.get('preset', 'quick')}]`).checked = true;
+document.querySelector(`input[name=method][value=${store.get('method', 'auto')}]`).checked = true;
 $('frames').value = store.get('frames', 40);
 
 function settings() {
@@ -52,11 +55,12 @@ function settings() {
     tiltDeg: isFinite(tilt) ? Math.min(60, Math.max(0, tilt)) : 20,
     clockwise: document.querySelector('input[name=dir]:checked').value === 'clock',
     preset: document.querySelector('input[name=preset]:checked').value,
+    method: document.querySelector('input[name=method]:checked').value,
   };
 }
 function remember() {
   const s = settings();
-  store.set('tilt', s.tiltDeg); store.set('clockwise', s.clockwise); store.set('preset', s.preset);
+  store.set('tilt', s.tiltDeg); store.set('clockwise', s.clockwise); store.set('preset', s.preset); store.set('method', s.method);
   store.set('frames', parseInt($('frames').value, 10) || 40);
 }
 
@@ -103,8 +107,30 @@ function setInput(fileList) {
   showSummary();
 }
 
+const MB = Math.round(MODEL_BYTES / 1e6);
+const METHOD_NAMES = { silhouette: 'Turntable silhouette', triposr: 'One photo (TripoSR)' };
+
+/** The method this input will use, as the worker will decide it. */
+function resolvedMethod() {
+  const count = !input ? 0 : input.kind === 'video' ? Math.max(6, parseInt($('frames').value, 10) || 40) : input.files.length;
+  return chooseMethod(count, settings().method);
+}
+
+async function showMethod() {
+  const m = resolvedMethod();
+  const auto = settings().method === 'auto';
+  $('methodNote').textContent = !input ? 'Fewer than 6 photos use the one-photo method; 6 or more of a full turn use the turntable method.'
+    : `${auto ? 'Automatic choice' : 'You chose'}: ${METHOD_NAMES[m]}.` +
+      (m === 'triposr' ? ' The sharpest photo is used and the hidden sides are guessed.' : '');
+  $('turntableSettings').hidden = m !== 'silhouette';
+  const cached = await modelCached();
+  $('modelStored').hidden = !cached;
+  $('tripoInfo').hidden = m !== 'triposr' || cached;
+}
+
 function showSummary() {
   urls.forEach(URL.revokeObjectURL); urls = [];
+  showMethod();
   const box = $('summary');
   $('framesField').hidden = input?.kind !== 'video';
   $('build').disabled = !input || running;
@@ -124,10 +150,6 @@ function showSummary() {
   const n = input.files.length;
   count.textContent = `${n} photo${n === 1 ? '' : 's'}`;
   box.append(count);
-  if (n < MIN_PHOTOS) {
-    message('warn', `The browser version needs at least ${MIN_PHOTOS} photos all the way round.`,
-            ['For one or two photos, use the desktop app: its TripoSR engine guesses the hidden sides.']);
-  }
   const thumbs = document.createElement('div');
   thumbs.className = 'thumbs';
   for (const f of input.files.slice(0, 24)) {
@@ -172,6 +194,12 @@ drop.addEventListener('drop', async (e) => {
 window.addEventListener('dragover', (e) => e.preventDefault());
 window.addEventListener('drop', (e) => e.preventDefault());
 
+for (const el of document.querySelectorAll('input[name=method]')) el.addEventListener('change', () => { remember(); showMethod(); });
+$('frames').addEventListener('change', showMethod);
+$('forgetModel').addEventListener('click', async () => { await forgetModel(); showMethod(); message('warn', `The TripoSR model (${MB} MB) was removed from this browser.`); });
+$('modelLink').href = MODEL_PAGE;
+showMethod();
+
 // ---- running ----
 function setRunning(on) {
   running = on;
@@ -190,9 +218,27 @@ function showProgress(stage, fraction, msg) {
 
 function stopWorker() { if (worker) { worker.terminate(); worker = null; } }
 
+/** Ask once before the one-photo model is downloaded. Resolves true to go ahead. */
+function confirmDownload() {
+  return new Promise((resolve) => {
+    const box = $('consent');
+    box.hidden = false;
+    $('build').hidden = true;
+    $('tripoInfo').hidden = true;
+    const done = (ok) => { box.hidden = true; $('build').hidden = false; yes.onclick = no.onclick = null; resolve(ok); };
+    const yes = $('consentYes'), no = $('consentNo');
+    yes.onclick = () => done(true);
+    no.onclick = () => done(false);
+    yes.focus();
+  });
+}
+
 async function build() {
   if (!input || running) return;
   remember();
+  if (resolvedMethod() === 'triposr' && !(await modelCached())) {
+    if (!(await confirmDownload())) return;
+  }
   clearMessages();
   $('log').replaceChildren();
   $('result').hidden = true;
@@ -218,8 +264,7 @@ async function build() {
       transfer.push(...msg.files.map((f) => f.buffer));
     }
     if (cancelledFlag) return;
-    stopWorker();
-    worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+    if (!worker) worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });   // kept: the model stays loaded
     const result = await new Promise((resolve, reject) => {
       worker.onmessage = (e) => {
         const m = e.data;
@@ -235,23 +280,28 @@ async function build() {
     if (cancelledFlag) return;
     const m = err.userMessage || err.message || String(err);
     const lines = [];
-    if (err.code === 'NO_MODEL') lines.push('Check the turntable direction and the camera tilt, and that the photos are in turning order.');
+    if (err.code === 'NO_MODEL' && resolvedMethod() === 'silhouette') lines.push('Check the turntable direction and the camera tilt, and that the photos are in turning order.');
     if (err.code === 'NO_OUTLINE') lines.push('Shoot against a plain backdrop whose colour differs from the product.');
     message('bad', m, lines, err.detail || '');
     $('stage').textContent = 'Stopped.';
   } finally {
-    stopWorker();
     setRunning(false);
+    showMethod();
     if (cancelledFlag) { $('stage').textContent = 'Cancelled.'; $('bar').classList.remove('busy'); }
   }
 }
 
 function showResult(r, name) {
   showProgress('Done', 1);
-  $('stage').textContent = `Done: ${r.info.photos} ${input?.kind === 'video' ? 'frames' : 'photos'} used.`;
+  $('stage').textContent = r.method === 'triposr' ? 'Done: built from one photo.'
+    : `Done: ${r.info.photos} ${input?.kind === 'video' ? 'frames' : 'photos'} used.`;
   if (r.info.warnings.length) message('warn', 'Worth knowing', r.info.warnings);
-  if (viewer) { viewer.setMesh(r.vertices, r.normals, r.faces); $('empty').hidden = true; $('viewhelp').hidden = false; }
+  if (viewer) { viewer.setMesh(r.vertices, r.normals, r.faces, r.colors); $('empty').hidden = true; $('viewhelp').hidden = false; }
   else $('empty').hidden = true;
+  $('colourToggle').hidden = !r.colors || !viewer;
+  $('showColours').checked = true;
+  if (viewer) viewer.showColors = true;
+  $('rMethod').textContent = METHOD_NAMES[r.method];
   const [w, h, d] = r.sizeMm;
   $('rSize').textContent = `${w.toFixed(1)} × ${h.toFixed(1)} × ${d.toFixed(1)} mm${r.scaledToHeight ? '' : ' (no height given)'}`;
   $('rTris').textContent = (r.faces.length / 3).toLocaleString();
@@ -266,6 +316,7 @@ function showResult(r, name) {
 }
 
 $('build').addEventListener('click', build);
+$('showColours').addEventListener('change', (e) => { if (viewer) { viewer.showColors = e.target.checked; viewer.draw(); } });
 $('cancel').addEventListener('click', () => { cancelledFlag = true; stopWorker(); setRunning(false); $('stage').textContent = 'Cancelled.'; $('bar').classList.remove('busy'); });
 
 if (!window.Worker || !window.OffscreenCanvas || !window.createImageBitmap) {

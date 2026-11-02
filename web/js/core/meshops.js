@@ -27,8 +27,8 @@ export function removeDegenerate(v, f, minArea = 1e-12) {
   return Uint32Array.from(out);
 }
 
-/** Keep only the biggest connected piece (by face count); re-index vertices. */
-export function largestComponent(v, f) {
+/** Keep only the biggest connected piece (by face count); re-index vertices (and colours, if given). */
+export function largestComponent(v, f, colors = null) {
   const nv = v.length / 3;
   const parent = new Int32Array(nv);
   for (let i = 0; i < nv; i++) parent[i] = i;
@@ -40,16 +40,20 @@ export function largestComponent(v, f) {
   let best = -1, bestN = -1;
   for (const [r, c] of counts) if (c > bestN) { best = r; bestN = c; }
   const remap = new Int32Array(nv).fill(-1);
-  const keptV = [], keptF = [];
+  const keptV = [], keptF = [], keptC = [];
   for (let i = 0; i < f.length; i += 3) {
     if (find(f[i]) !== best) continue;
     for (let k = 0; k < 3; k++) {
       const o = f[i + k];
-      if (remap[o] < 0) { remap[o] = keptV.length / 3; keptV.push(v[3 * o], v[3 * o + 1], v[3 * o + 2]); }
+      if (remap[o] < 0) {
+        remap[o] = keptV.length / 3;
+        keptV.push(v[3 * o], v[3 * o + 1], v[3 * o + 2]);
+        if (colors) keptC.push(colors[3 * o], colors[3 * o + 1], colors[3 * o + 2]);
+      }
       keptF.push(remap[o]);
     }
   }
-  return { vertices: Float64Array.from(keptV), faces: Uint32Array.from(keptF) };
+  return { vertices: Float64Array.from(keptV), faces: Uint32Array.from(keptF), colors: colors ? Uint8Array.from(keptC) : null };
 }
 
 /** Unique neighbours of every vertex, as CSR arrays. */

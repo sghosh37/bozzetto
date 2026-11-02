@@ -69,14 +69,15 @@ Optional, for the TripoSR engine (`pip install "bozzetto[triposr]"`):
 
 ## Browser version (`web/`) and the web pages
 
-The browser engine is Bozzetto's own code (a port of its Python engine) and includes no third-party
-code. The pages load one third-party resource:
+The browser engine is Bozzetto's own code (a port of its Python engine, including the parts of the
+TripoSR inference code it needs, MIT, see above). Nothing third-party is stored in this repository for
+the browser; the pages load these at run time:
 
-| Component | Licence | Source |
-|---|---|---|
-| IBM Plex Sans and IBM Plex Sans Condensed fonts, served by Google Fonts | SIL Open Font License 1.1 | https://github.com/IBM/plex |
-
-The pages work without them (system fonts are used instead).
+| Component | Licence | Source | When |
+|---|---|---|---|
+| ONNX Runtime Web 1.22.0 (Microsoft), from cdn.jsdelivr.net | MIT | https://github.com/microsoft/onnxruntime | One-photo method only |
+| TripoSR ONNX export, int8 (`cgb/triposr-onnx-webgpu`, revision `048725e`), from huggingface.co | MIT (TripoSR, Tripo AI & Stability AI); Apache-2.0 (DINO ViT-B/16 encoder inside, Meta) | https://huggingface.co/cgb/triposr-onnx-webgpu | One-photo method only, after the visitor agrees; checked against SHA-256 |
+| IBM Plex Sans and IBM Plex Sans Condensed fonts, served by Google Fonts | SIL Open Font License 1.1 | https://github.com/IBM/plex | Always (system fonts are used if they don't load) |
 
 ## Used through the operating system
 

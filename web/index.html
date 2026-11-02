@@ -7,7 +7,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bozzetto in the browser</title>
-<meta name="description" content="Turn turntable photos or a short video into a rough 3D model (OBJ) for Blender, right in your browser. Nothing is uploaded.">
+<meta name="description" content="Turn one photo, turntable photos or a short video into a rough 3D model (OBJ) for Blender, right in your browser. Nothing is uploaded.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap">
@@ -78,6 +78,12 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
 .result dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 .result .dl { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .blender { flex-basis: 100%; font-size: 14px; color: var(--ink-2); margin: 0; padding-right: 72px; }
+.consent { background: var(--accent-soft); display: grid; gap: 4px; }
+.consent p { margin: 0; }
+.consent .go { margin-top: 8px; }
+.linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer; }
+.colour-toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 14.5px; }
+.colour-toggle input { accent-color: var(--accent); }
 [hidden] { display: none !important; }
 </style>
 </head>
@@ -97,7 +103,7 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
     <div>
       <h2><span class="step-n" aria-hidden="true">1</span>Add photos or a video</h2>
       <div class="drop" id="drop">
-        <p>Drop turntable photos, a folder of them, or a video here.</p>
+        <p>Drop one photo, turntable photos, a folder of them, or a video here.</p>
         <div class="pick">
           <label class="btn" for="pickPhotos">Choose photos</label>
           <label class="btn" for="pickFolder">Choose a folder</label>
@@ -107,17 +113,28 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
         <input class="sr" type="file" id="pickFolder" webkitdirectory multiple>
         <input class="sr" type="file" id="pickVideo" accept="video/*">
       </div>
-      <p class="hint" style="margin-top:10px">At least 6 photos of one full turn, camera fixed, plain backdrop. Photos are used in file-name order. Nothing is uploaded: everything runs on this computer.</p>
+      <p class="hint" style="margin-top:10px">One clear photo, or 6 or more of one full turn with the camera fixed (used in file-name order). A plain backdrop helps either way. Nothing is uploaded: everything runs on this computer.</p>
       <div class="summary" id="summary" hidden></div>
     </div>
 
     <div>
       <h2><span class="step-n" aria-hidden="true">2</span>Check the settings</h2>
+      <fieldset class="field">
+        <legend>Method</legend>
+        <div class="seg">
+          <label><input type="radio" name="method" value="auto" checked> Automatic</label>
+          <label><input type="radio" name="method" value="silhouette"> Turntable</label>
+          <label><input type="radio" name="method" value="triposr"> One photo</label>
+        </div>
+        <p class="hint" id="methodNote" aria-live="polite"></p>
+        <p class="hint" id="modelStored" hidden>The one-photo model is stored in this browser. <button type="button" class="linkish" id="forgetModel">Remove it</button></p>
+      </fieldset>
       <div class="field">
         <label for="height">Real height of the object, in mm</label>
         <input type="number" id="height" min="1" step="0.1" inputmode="decimal" placeholder="e.g. 82">
         <p class="hint">Photos carry no scale. Leave empty to make the model 100 mm high.</p>
       </div>
+      <div id="turntableSettings">
       <div class="field">
         <label for="tilt">Camera tilt, in degrees down</label>
         <input type="number" id="tilt" min="0" max="60" step="1" value="20">
@@ -131,6 +148,7 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
         </div>
         <p class="hint">Seen from above. If the model comes out as a thin twisted shape, try the other way.</p>
       </fieldset>
+      </div>
       <fieldset class="field">
         <legend>Detail</legend>
         <div class="seg">
@@ -146,9 +164,16 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
 
     <div>
       <h2><span class="step-n" aria-hidden="true">3</span>Build</h2>
+      <p class="hint" id="tripoInfo" hidden>The first one-photo build downloads the TripoSR model (about 485 MB) once; it is kept in this browser.</p>
       <div class="go">
         <button class="btn primary" id="build" disabled>Build 3D model</button>
         <button class="btn" id="cancel" hidden>Cancel</button>
+      </div>
+      <div class="msg consent" id="consent" hidden role="dialog" aria-labelledby="consentTitle">
+        <b id="consentTitle">Download the one-photo model?</b>
+        <p>TripoSR builds a shape from a single photo. Its model is about 485 MB, downloaded once from Hugging Face and kept in this browser for next time. Your photo stays on this computer.</p>
+        <p class="hint">Licence: MIT (TripoSR) and Apache-2.0 (its image encoder). <a id="modelLink" target="_blank" rel="noopener">About the model files</a>. Runs fastest in Chrome or Edge with WebGPU.</p>
+        <div class="go"><button class="btn primary" id="consentYes">Download and build</button><button class="btn" id="consentNo">Not now</button></div>
       </div>
       <div class="progress" id="progress" hidden style="margin-top:12px">
         <div class="bar" id="bar"><i></i></div>
@@ -162,7 +187,7 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
   <section class="stagearea" aria-label="3D model">
     <div class="view">
       <canvas class="mesh" id="canvas" tabindex="0" aria-label="3D model preview. Drag or use the arrow keys to turn it."></canvas>
-      <div class="empty" id="empty"><div><strong>Your model appears here</strong>Add photos, check the settings, then build. A turn of 24 photos takes about ten seconds.</div></div>
+      <div class="empty" id="empty"><div><strong>Your model appears here</strong>Add one photo or a turntable set, check the settings, then build.</div></div>
       <p class="viewhelp" id="viewhelp" hidden>Drag to turn, scroll to zoom, double-click to reset</p>
     </div>
     <div class="result" id="result" hidden>
@@ -170,7 +195,9 @@ fieldset.field { border: 0; padding: 0; margin: 0 0 14px; }
         <div><dt>Size (W × H × D)</dt><dd id="rSize"></dd></div>
         <div><dt>Triangles</dt><dd id="rTris"></dd></div>
         <div><dt>Built in</dt><dd id="rTime"></dd></div>
+        <div><dt>Method</dt><dd id="rMethod"></dd></div>
       </dl>
+      <label class="colour-toggle" id="colourToggle" hidden><input type="checkbox" id="showColours" checked> Show colours</label>
       <div class="dl">
         <a class="btn primary" id="dlObj" download>Download OBJ</a>
         <a class="btn" id="dlGlb" download>Download GLB</a>

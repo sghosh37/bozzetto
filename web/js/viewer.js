@@ -6,21 +6,22 @@
 // Shaded like modelling clay so the form reads clearly.
 
 const VS = `
-attribute vec3 aPos; attribute vec3 aNrm;
+attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol;
 uniform mat4 uMVP; uniform mat3 uN;
-varying vec3 vN;
-void main() { vN = normalize(uN * aNrm); gl_Position = uMVP * vec4(aPos, 1.0); }`;
+varying vec3 vN; varying vec3 vC;
+void main() { vN = normalize(uN * aNrm); vC = aCol; gl_Position = uMVP * vec4(aPos, 1.0); }`;
 const FS = `
 precision mediump float;
-varying vec3 vN;
-uniform vec3 uClay; uniform vec3 uSky; uniform vec3 uGround;
+varying vec3 vN; varying vec3 vC;
+uniform vec3 uClay; uniform vec3 uSky; uniform vec3 uGround; uniform float uUseCol;
 void main() {
   vec3 n = normalize(vN);
   vec3 key = normalize(vec3(-0.45, 0.75, 0.55));
   float d = max(dot(n, key), 0.0);
   float rim = pow(1.0 - max(n.z, 0.0), 2.5);
   vec3 hemi = mix(uGround, uSky, n.y * 0.5 + 0.5);
-  vec3 c = uClay * (0.48 * hemi + 0.62 * d) + 0.08 * rim;
+  vec3 base = mix(uClay, vC, uUseCol);
+  vec3 c = base * (0.48 * hemi + 0.62 * d) + 0.08 * rim;
   gl_FragColor = vec4(c, 1.0);
 }`;
 
@@ -60,10 +61,12 @@ export class MeshViewer {
     gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FS));
     gl.linkProgram(p);
     this.p = p;
-    this.loc = { pos: gl.getAttribLocation(p, 'aPos'), nrm: gl.getAttribLocation(p, 'aNrm'), mvp: gl.getUniformLocation(p, 'uMVP'),
+    this.loc = { pos: gl.getAttribLocation(p, 'aPos'), nrm: gl.getAttribLocation(p, 'aNrm'), col: gl.getAttribLocation(p, 'aCol'),
+                 useCol: gl.getUniformLocation(p, 'uUseCol'), mvp: gl.getUniformLocation(p, 'uMVP'),
                  n: gl.getUniformLocation(p, 'uN'), clay: gl.getUniformLocation(p, 'uClay'),
                  sky: gl.getUniformLocation(p, 'uSky'), ground: gl.getUniformLocation(p, 'uGround') };
     this.yaw = 0.6; this.pitch = 0.32; this.zoom = 1; this.count = 0;
+    this.hasColors = false; this.showColors = true;
     this.spin = spin && !matchMedia('(prefers-reduced-motion: reduce)').matches;
     this._bind();
     new ResizeObserver(() => this.draw()).observe(canvas);
@@ -105,15 +108,17 @@ export class MeshViewer {
     });
   }
 
-  /** vertices and normals: Float32Array xyz; faces: Uint32Array. Units don't matter (fitted to view). */
-  setMesh(vertices, normals, faces) {
+  /** vertices and normals: Float32Array xyz; faces: Uint32Array; colors: optional Uint8Array rgb. Units don't matter. */
+  setMesh(vertices, normals, faces, colors = null) {
     const gl = this.gl;
     let min = [Infinity, Infinity, Infinity], max = [-Infinity, -Infinity, -Infinity];
     for (let i = 0; i < vertices.length; i += 3) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], vertices[i + k]); max[k] = Math.max(max[k], vertices[i + k]); }
     this.centre = min.map((m, k) => (m + max[k]) / 2);
     this.radius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2 || 1;
     const buf = (data, target) => { const b = gl.createBuffer(); gl.bindBuffer(target, b); gl.bufferData(target, data, gl.STATIC_DRAW); return b; };
-    for (const b of [this.vb, this.nb, this.ib]) if (b) gl.deleteBuffer(b);
+    for (const b of [this.vb, this.nb, this.ib, this.cb]) if (b) gl.deleteBuffer(b);
+    this.hasColors = !!colors;
+    this.cb = colors ? buf(Float32Array.from(colors, (c) => c / 255), gl.ARRAY_BUFFER) : null;
     this.vb = buf(vertices instanceof Float32Array ? vertices : Float32Array.from(vertices), gl.ARRAY_BUFFER);
     this.nb = buf(normals instanceof Float32Array ? normals : Float32Array.from(normals), gl.ARRAY_BUFFER);
     if (this.uint) { this.ib = buf(Uint32Array.from(faces), gl.ELEMENT_ARRAY_BUFFER); this.itype = gl.UNSIGNED_INT; }
@@ -165,6 +170,14 @@ export class MeshViewer {
     gl.enableVertexAttribArray(this.loc.pos); gl.vertexAttribPointer(this.loc.pos, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.nb);
     gl.enableVertexAttribArray(this.loc.nrm); gl.vertexAttribPointer(this.loc.nrm, 3, gl.FLOAT, false, 0, 0);
+    const useCol = this.hasColors && this.showColors && this.cb && this.loc.col >= 0;
+    if (useCol) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.cb);
+      gl.enableVertexAttribArray(this.loc.col); gl.vertexAttribPointer(this.loc.col, 3, gl.FLOAT, false, 0, 0);
+    } else if (this.loc.col >= 0) {
+      gl.disableVertexAttribArray(this.loc.col); gl.vertexAttrib3f(this.loc.col, 0, 0, 0);
+    }
+    gl.uniform1f(this.loc.useCol, useCol ? 1 : 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ib);
     gl.drawElements(gl.TRIANGLES, this.count, this.itype, 0);
   }
